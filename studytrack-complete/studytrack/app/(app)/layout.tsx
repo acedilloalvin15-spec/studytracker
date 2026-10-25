@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '@/components/app/app-shell'
 import { UserProvider } from '@/components/app/user-provider'
+import { OfflineSync } from '@/components/pwa/offline-sync'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/lib/types'
 
@@ -30,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <UserProvider value={{ userId: user.id, email: user.email ?? '', initialProfile: profile }}>
+      <OfflineSync />
       <AppShell>{children}</AppShell>
     </UserProvider>
   )

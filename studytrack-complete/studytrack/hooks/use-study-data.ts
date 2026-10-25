@@ -2,11 +2,13 @@
 
 import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
+import { saveOffline } from '@/lib/offline'
 import type {
   ClassSession,
   Exam,
   Profile,
   ReviewSession,
+  Reviewer,
   Subject,
   Task,
 } from '@/lib/types'
@@ -15,7 +17,9 @@ async function fetchTable<T>(table: string, order: string, ascending = true): Pr
   const supabase = createClient()
   const { data, error } = await supabase.from(table).select('*').order(order, { ascending })
   if (error) throw error
-  return (data ?? []) as T[]
+  const rows = (data ?? []) as T[]
+  saveOffline(table, rows)
+  return rows
 }
 
 export function useSubjects() {
@@ -60,4 +64,18 @@ export function useProfile(userId: string, fallbackData?: Profile) {
 export function useSubjectMap() {
   const { data } = useSubjects()
   return new Map((data ?? []).map((s) => [s.id, s]))
+}
+
+export function useReviewers() {
+  return useSWR<Reviewer[]>('reviewers', () => fetchTable<Reviewer>('reviewers', 'created_at', false))
+}
+
+export function useReviewer(id: string) {
+  return useSWR<Reviewer | null>(`reviewer:${id}`, async () => {
+    const { data, error } = await createClient().from('reviewers').select('*').eq('id', id).maybeSingle()
+    if (error) throw error
+    const reviewer = (data as Reviewer | null) ?? null
+    if (reviewer) saveOffline(`reviewer:${id}`, reviewer)
+    return reviewer
+  })
 }

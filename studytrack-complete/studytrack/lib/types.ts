@@ -59,3 +59,19 @@ export type ReviewSession = {
   session_date: string
   is_done: boolean
 }
+
+export type ReviewerContent = {
+  summary: string
+  key_terms: { term: string; definition: string }[]
+  flashcards: { question: string; answer: string }[]
+  quiz: { question: string; options: string[]; answer_index: number; explanation: string }[]
+}
+
+export type Reviewer = {
+  id: string
+  subject_id: string | null
+  title: string
+  source_name: string | null
+  content: ReviewerContent
+  created_at: string
+}

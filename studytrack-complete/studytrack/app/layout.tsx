@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
+import { OfflineBanner } from '@/components/pwa/offline-banner'
+import { RegisterSW } from '@/components/pwa/register-sw'
 import './globals.css'
 
 const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
@@ -23,6 +25,7 @@ export const metadata: Metadata = {
     'StudyTrack is a free study planner for students. Track deadlines, organize your weekly class schedule, and get a smart review plan before every exam.',
   keywords: ['study planner', 'student planner', 'homework tracker', 'exam review', 'class schedule'],
   applicationName: 'StudyTrack',
+  appleWebApp: { capable: true, title: 'StudyTrack', statusBarStyle: 'default' },
   openGraph: {
     title: 'StudyTrack — Never miss a deadline again',
     description:
@@ -52,6 +55,8 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
           <Toaster richColors position="top-center" />
+          <OfflineBanner />
+          <RegisterSW />
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

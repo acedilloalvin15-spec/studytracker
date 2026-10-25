@@ -19,6 +19,7 @@ import { initials, useCurrentUser } from '@/components/app/user-provider'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { createClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth'
+import { clearOfflineData } from '@/lib/offline'
 import { passwordSchema, profileSchema, type ProfileValues } from '@/lib/validations'
 import type { ReminderSettings } from '@/lib/types'
 import type { z } from 'zod'
@@ -241,6 +242,7 @@ function DangerCard() {
       throw new Error('delete failed')
     }
     await createClient().auth.signOut()
+    await clearOfflineData()
     toast.success('Your account was deleted.')
     router.replace('/')
     router.refresh()

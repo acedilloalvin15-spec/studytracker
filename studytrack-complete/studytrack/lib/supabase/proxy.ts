@@ -7,6 +7,7 @@ const PROTECTED_PREFIXES = [
   '/subjects',
   '/schedule',
   '/review',
+  '/reviewers',
   '/calendar',
   '/settings',
 ]

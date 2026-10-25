@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format, parseISO } from 'date-fns'
-import { BookMarked, CalendarClock, GraduationCap, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { BookMarked, CalendarClock, FileText, GraduationCap, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { mutate } from 'swr'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -103,6 +103,9 @@ export function ReviewView() {
         actions={
           !noSubjects && (
             <>
+              <Link href="/reviewers" className={buttonVariants({ variant: 'outline', size: 'lg' })}>
+                <FileText aria-hidden="true" /> Reviewer maker
+              </Link>
               <Button variant="outline" size="lg" onClick={() => handleRegenerate()} disabled={regenerating || !upcomingExams.length}>
                 {regenerating ? <Loader2 className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
                 Regenerate plan

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { BookMarked, LogOut, Settings, UserRound } from 'lucide-react'
+import { BookMarked, FileText, LogOut, Settings, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { initials, useCurrentUser } from '@/components/app/user-provider'
 import { createClient } from '@/lib/supabase/client'
+import { clearOfflineData } from '@/lib/offline'
 
 export function UserMenu() {
   const router = useRouter()
@@ -24,6 +25,7 @@ export function UserMenu() {
   async function signOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
+    await clearOfflineData()
     toast.success('Signed out. See you soon!')
     router.replace('/login')
     router.refresh()
@@ -49,6 +51,9 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push('/settings')}>
           <UserRound aria-hidden="true" /> Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push('/reviewers')}>
+          <FileText aria-hidden="true" /> Reviewer maker
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push('/subjects')}>
           <BookMarked aria-hidden="true" /> Subjects

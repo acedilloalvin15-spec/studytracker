@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Loader2, MailCheck } from 'lucide-react'
@@ -19,13 +19,57 @@ import { signupSchema, type SignupValues } from '@/lib/validations'
 export function SignupForm() {
   const router = useRouter()
   const [sentTo, setSentTo] = useState<string | null>(null)
+  const [cooldown, setCooldown] = useState(0)
+  const [resending, setResending] = useState(false)
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<SignupValues>({ resolver: zodResolver(signupSchema) })
 
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
+
+  async function resend() {
+    if (!sentTo) return
+    setResending(true)
+    const { error } = await createClient().auth.resend({
+      type: 'signup',
+      email: sentTo,
+      options: { emailRedirectTo: authRedirectUrl() },
+    })
+    setResending(false)
+    if (error) {
+      toast.error(friendlyAuthError(error))
+      return
+    }
+    toast.success('Confirmation email sent again')
+    setCooldown(60)
+  }
+
   async function onSubmit(values: SignupValues) {
+    // Early check: catches typos, temporary inboxes, and domains that cannot receive email.
+    try {
+      const res = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: values.email }),
+      })
+      if (res.ok) {
+        const result = (await res.json()) as { ok: boolean; message?: string }
+        if (!result.ok) {
+          setError('email', { type: 'validate', message: result.message ?? 'Please use a real email address.' })
+          return
+        }
+      }
+    } catch {
+      // If the check cannot run, the confirmation email below still protects the site.
+    }
+
     const supabase = createClient()
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
@@ -62,11 +106,15 @@ export function SignupForm() {
           <CardTitle className="text-2xl">Check your email</CardTitle>
           <CardDescription>
             We sent a confirmation link to <span className="font-medium text-foreground">{sentTo}</span>.
-            Click it to activate your account, then come back and log in.
+            Click it to activate your account, then come back and log in. If you don&apos;t see it, check your spam folder.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button variant="outline" className="w-full" render={<Link href="/login" />}>
+        <CardContent className="flex flex-col gap-3">
+          <Button variant="outline" className="w-full" onClick={resend} disabled={resending || cooldown > 0}>
+            {resending && <Loader2 className="animate-spin" aria-hidden="true" />}
+            {cooldown > 0 ? `Send again in ${cooldown}s` : 'Send the email again'}
+          </Button>
+          <Button className="w-full" render={<Link href="/login" />}>
             Back to log in
           </Button>
         </CardContent>
