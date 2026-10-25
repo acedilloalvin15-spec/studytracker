@@ -117,35 +117,66 @@ export async function POST(request: Request) {
     return fail('I could not read that file. Try saving it again as a PDF.')
   }
 
+  // Try the main model; if Google is busy, retry once, then fall back to a backup model.
+  // Each model has its own free quota, so the backup also helps when the daily limit is reached.
+  const models = [model, process.env.GEMINI_FALLBACK_MODEL || 'gemini-flash-lite-latest'].filter(
+    (m, i, all) => all.indexOf(m) === i,
+  )
+
   let aiText = ''
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
-      }),
-    })
+  let blocked = false
+  let lastStatus = 0
 
-    if (!res.ok) {
-      if (res.status === 429) {
-        return fail('The free AI limit was reached for now. Please wait a few minutes (or until tomorrow) and try again.', 429)
-      }
-      if (res.status === 400 || res.status === 403 || res.status === 404) {
-        return fail('The AI service rejected the request. Check GEMINI_API_KEY and GEMINI_MODEL in your Vercel settings.', 502)
-      }
-      return fail('The AI service is busy. Please try again in a moment.', 502)
-    }
+  outer: for (const m of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: { responseMimeType: 'application/json', temperature: 0.4 },
+          }),
+        })
 
-    const data = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[]
-      promptFeedback?: { blockReason?: string }
+        if (res.ok) {
+          const data = (await res.json()) as {
+            candidates?: { content?: { parts?: { text?: string }[] } }[]
+            promptFeedback?: { blockReason?: string }
+          }
+          if (data.promptFeedback?.blockReason) {
+            blocked = true
+            break outer
+          }
+          const text = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('')
+          if (text.trim()) {
+            aiText = text
+            break outer
+          }
+          lastStatus = 204
+          break
+        }
+
+        lastStatus = res.status
+        console.error(`Gemini error ${res.status} on ${m}:`, (await res.text()).slice(0, 300))
+        if (![500, 503, 504].includes(res.status)) break // not a busy error: go to the next model
+      } catch (err) {
+        lastStatus = 0
+        console.error(`Gemini request failed on ${m}:`, err)
+      }
+      await new Promise((r) => setTimeout(r, 1500))
     }
-    if (data.promptFeedback?.blockReason) return fail('The AI could not use that file. Try a different one.', 422)
-    aiText = (data.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('')
-  } catch {
-    return fail('Could not reach the AI service. Please try again.', 502)
+  }
+
+  if (blocked) return fail('The AI could not use that file. Try a different one.', 422)
+  if (!aiText) {
+    if (lastStatus === 429) {
+      return fail('The free AI limit was reached for now. Please wait a few minutes (or until tomorrow) and try again.', 429)
+    }
+    if (lastStatus === 400 || lastStatus === 401 || lastStatus === 403 || lastStatus === 404) {
+      return fail('The AI service rejected the request. Check GEMINI_API_KEY and GEMINI_MODEL in your Vercel settings.', 502)
+    }
+    return fail('The AI service is busy right now. Please try again in a minute.', 503)
   }
 
   let content: ReviewerContent
