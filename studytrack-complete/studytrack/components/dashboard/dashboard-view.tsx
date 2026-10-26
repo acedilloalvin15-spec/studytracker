@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, ListSkeleton, SubjectDot } from '@/components/app/shared'
+import { HeaderContent } from '@/components/app/header-slots'
 import { useCurrentUser } from '@/components/app/user-provider'
 import { TaskDialog } from '@/components/tasks/task-dialog'
 import { TaskItem } from '@/components/tasks/task-item'
@@ -93,18 +94,15 @@ export function DashboardView() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE, MMMM d')}</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-balance md:text-3xl">
-            {greeting()}
-            {firstName ? `, ${firstName}` : ''}
-          </h1>
-        </div>
-        <Button variant="dark" size="lg" onClick={() => setAddOpen(true)}>
-          <Plus aria-hidden="true" /> Add task
-        </Button>
-      </div>
+      <HeaderContent
+        title={`${greeting()}${firstName ? `, ${firstName}` : ''}`}
+        description={format(new Date(), 'EEEE, MMMM d')}
+        actions={
+          <Button variant="dark" size="lg" onClick={() => setAddOpen(true)}>
+            <Plus aria-hidden="true" /> Add task
+          </Button>
+        }
+      />
 
       <section aria-label="Summary" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
         {stats.map(({ label, value, icon: Icon, dot, note }) => (
