@@ -17,6 +17,8 @@ export function SiteFooter() {
           <a href="#how-it-works" className="hover:text-foreground">How it works</a>
           <Link href="/login" className="hover:text-foreground">Log in</Link>
           <Link href="/signup" className="hover:text-foreground">Sign up</Link>
+          <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+          <Link href="/terms" className="hover:text-foreground">Terms</Link>
         </nav>
       </div>
     </footer>
