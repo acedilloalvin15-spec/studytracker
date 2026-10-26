@@ -17,9 +17,10 @@ const STYLES: Record<string, string> = {
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+     { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -30,7 +31,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid kind" }, { status: 400 });
     }
 
-    const reviewer = await getReviewer(params.id, userId);
+    const reviewer = await getReviewer(id, userId);
     if (!reviewer) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
@@ -70,7 +71,7 @@ ${shape}`;
     }
 
     // Save only after a valid result, so a failure never wipes the old set.
-    await saveReviewerSection(params.id, userId, kind, items as any);
+    await saveReviewerSection(id, userId, kind, items as any);
 
     return NextResponse.json({ items });
   } catch (err) {
