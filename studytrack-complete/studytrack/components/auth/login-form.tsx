@@ -109,7 +109,7 @@ export function LoginForm() {
             </button>
           </div>
         </FormField>
-        <Button type="submit" className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-sm" disabled={isSubmitting}>
+        <Button type="submit" variant="dark" className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-sm" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="animate-spin" aria-hidden="true" />}
           {isSubmitting ? 'Logging in…' : 'Log in'}
         </Button>

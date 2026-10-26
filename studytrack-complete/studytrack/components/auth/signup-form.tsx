@@ -124,7 +124,7 @@ export function SignupForm() {
             {resending && <Loader2 className="animate-spin" aria-hidden="true" />}
             {cooldown > 0 ? `Send again in ${cooldown}s` : 'Send the email again'}
           </Button>
-          <Button className="h-11 w-full rounded-full font-semibold" render={<Link href="/login" />}>
+          <Button variant="dark" className="h-11 w-full rounded-full font-semibold" render={<Link href="/login" />}>
             Back to log in
           </Button>
         </div>
@@ -185,7 +185,7 @@ export function SignupForm() {
             {...register('confirmPassword')}
           />
         </FormField>
-        <Button type="submit" className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-sm" disabled={isSubmitting}>
+        <Button type="submit" variant="dark" className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-sm" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="animate-spin" aria-hidden="true" />}
           {isSubmitting ? 'Creating account…' : 'Create account'}
         </Button>
