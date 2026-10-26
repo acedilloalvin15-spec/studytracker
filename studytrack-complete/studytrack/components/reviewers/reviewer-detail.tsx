@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, FileText, RefreshCw, RotateCcw, Trash2, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, FileText, RotateCcw, Trash2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { mutate } from 'swr'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -113,12 +113,10 @@ export function ReviewerDetail({ id }: { id: string }) {
         </TabsContent>
 
         <TabsContent value="cards" className="flex flex-col gap-4">
-          <RegenerateControls reviewerId={id} kind="flashcards" />
           <Flashcards key={c.flashcards[0]?.question} cards={c.flashcards} />
         </TabsContent>
 
         <TabsContent value="quiz" className="flex flex-col gap-4">
-          <RegenerateControls reviewerId={id} kind="quiz" />
           <Quiz key={c.quiz[0]?.question} items={c.quiz} />
         </TabsContent>
       </Tabs>
@@ -131,54 +129,6 @@ export function ReviewerDetail({ id }: { id: string }) {
         onConfirm={remove}
       />
     </>
-  )
-}
-
-function RegenerateControls({ reviewerId, kind }: { reviewerId: string; kind: 'flashcards' | 'quiz' }) {
-  const [style, setStyle] = useState('fresh')
-  const [loading, setLoading] = useState(false)
-  const label = kind === 'quiz' ? 'quiz' : 'flashcards'
-
-  async function regenerate() {
-    if (!window.confirm(`Replace your current ${label} with a new set?`)) return
-    setLoading(true)
-    try {
-      const res = await fetch(`/api/reviewers/${reviewerId}/regenerate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ kind, style }),
-      })
-      if (!res.ok) throw new Error()
-      // Reload this reviewer (works whatever key the data hook uses)
-      await mutate((key) =>
-        Array.isArray(key) ? key.includes(reviewerId) : typeof key === 'string' && key.includes(reviewerId),
-      )
-      toast.success(`New ${label} ready`)
-    } catch {
-      toast.error('Could not make a new set. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <div className="mx-auto flex flex-wrap items-center justify-center gap-2">
-      <select
-        value={style}
-        onChange={(e) => setStyle(e.target.value)}
-        disabled={loading}
-        aria-label="Style of the new set"
-        className="h-9 rounded-md border bg-background px-3 text-sm"
-      >
-        <option value="fresh">Fresh angle</option>
-        <option value="easier">Easier</option>
-        <option value="harder">Harder</option>
-      </select>
-      <Button variant="outline" onClick={regenerate} disabled={loading}>
-        <RefreshCw className={loading ? 'animate-spin' : ''} aria-hidden="true" />
-        {loading ? 'Making a new set...' : `New ${label}`}
-      </Button>
-    </div>
   )
 }
 
