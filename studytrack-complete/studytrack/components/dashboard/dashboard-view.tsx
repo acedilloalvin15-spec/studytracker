@@ -29,11 +29,29 @@ import { formatTime, isDueToday, isOverdue, isThisWeek, isoDay, toDateKey } from
 import { toggleSession } from '@/lib/review-actions'
 import { cn } from '@/lib/utils'
 
+const panel = 'rounded-3xl border-0 bg-white/80 shadow-sm ring-0 dark:bg-card/80'
+const softRow = 'rounded-2xl bg-muted/50'
+
 function greeting() {
   const h = new Date().getHours()
   if (h < 12) return 'Good morning'
   if (h < 18) return 'Good afternoon'
   return 'Good evening'
+}
+
+function ProgressBar({ percent }: { percent: number }) {
+  return (
+    <div
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      className="h-3 w-full overflow-hidden rounded-full bg-violet-100 dark:bg-white/10"
+      style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent 0 3px, rgba(120,100,200,0.12) 3px 5px)' }}
+    >
+      <div className="h-full rounded-full bg-violet-300 transition-all dark:bg-violet-400" style={{ width: `${percent}%` }} />
+    </div>
+  )
 }
 
 export function DashboardView() {
@@ -46,23 +64,30 @@ export function DashboardView() {
   const [addOpen, setAddOpen] = useState(false)
 
   const open = (tasks ?? []).filter((t) => !t.is_completed)
+  const dueToday = open.filter((t) => isDueToday(t.due_at) && !isOverdue(t.due_at)).length
+  const dueWeek = open.filter((t) => isThisWeek(t.due_at) && !isOverdue(t.due_at)).length
+  const overdue = open.filter((t) => isOverdue(t.due_at)).length
+  const doneWeek = (tasks ?? []).filter(
+    (t) => t.is_completed && t.completed_at && dfIsThisWeek(parseISO(t.completed_at), { weekStartsOn: 1 }),
+  ).length
+  const doneAll = (tasks ?? []).filter((t) => t.is_completed).length
+
   const stats = [
-    { label: 'Due today', value: open.filter((t) => isDueToday(t.due_at) && !isOverdue(t.due_at)).length, icon: CalendarCheck2, tone: 'text-primary bg-primary/10' },
-    { label: 'Due this week', value: open.filter((t) => isThisWeek(t.due_at) && !isOverdue(t.due_at)).length, icon: ListChecks, tone: 'text-soon bg-soon/15' },
-    { label: 'Overdue', value: open.filter((t) => isOverdue(t.due_at)).length, icon: AlarmClock, tone: 'text-urgent bg-urgent/10' },
-    {
-      label: 'Done this week',
-      value: (tasks ?? []).filter((t) => t.is_completed && t.completed_at && dfIsThisWeek(parseISO(t.completed_at), { weekStartsOn: 1 })).length,
-      icon: CheckCircle2,
-      tone: 'text-later bg-later/10',
-    },
+    { label: 'Due today', value: dueToday, icon: CalendarCheck2, dot: 'bg-primary', note: `${open.length} open in total` },
+    { label: 'Due this week', value: dueWeek, icon: ListChecks, dot: 'bg-soon', note: 'This week' },
+    { label: 'Overdue', value: overdue, icon: AlarmClock, dot: overdue > 0 ? 'bg-urgent' : 'bg-later', note: overdue > 0 ? 'Needs attention' : 'All caught up' },
+    { label: 'Done this week', value: doneWeek, icon: CheckCircle2, dot: 'bg-later', note: `${doneAll} all time` },
   ]
+
+  const weekTotal = doneWeek + dueWeek
+  const weekPercent = weekTotal === 0 ? 0 : Math.round((doneWeek / weekTotal) * 100)
 
   const upcoming = [...open].sort((a, b) => a.due_at.localeCompare(b.due_at)).slice(0, 6)
   const today = isoDay(new Date())
   const todaysClasses = (classes ?? []).filter((c) => c.day_of_week === today).sort((a, b) => a.start_time.localeCompare(b.start_time))
   const todayKey = toDateKey(new Date())
   const todaysReview = (sessions ?? []).filter((s) => s.session_date === todayKey)
+  const reviewDone = todaysReview.filter((r) => r.is_done).length
   const examById = new Map((exams ?? []).map((e) => [e.id, e]))
   const firstName = profile.full_name?.split(' ')[0]
 
@@ -71,36 +96,42 @@ export function DashboardView() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{format(new Date(), 'EEEE, MMMM d')}</p>
-          <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight text-balance md:text-3xl">
             {greeting()}
             {firstName ? `, ${firstName}` : ''}
           </h1>
         </div>
-        <Button size="lg" onClick={() => setAddOpen(true)}>
+        <Button variant="dark" size="lg" onClick={() => setAddOpen(true)}>
           <Plus aria-hidden="true" /> Add task
         </Button>
       </div>
 
       <section aria-label="Summary" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-        {stats.map(({ label, value, icon: Icon, tone }) => (
-          <Card key={label} className="rounded-2xl">
-            <CardContent className="flex flex-col gap-3">
-              <span className={cn('flex size-9 items-center justify-center rounded-xl', tone)}>
-                <Icon className="size-4.5" aria-hidden="true" />
-              </span>
-              {loadingTasks ? (
-                <Skeleton className="h-8 w-10" />
-              ) : (
-                <p className="text-3xl font-bold tabular-nums">{value}</p>
-              )}
-              <p className="text-sm text-muted-foreground">{label}</p>
+        {stats.map(({ label, value, icon: Icon, dot, note }) => (
+          <Card key={label} className={panel}>
+            <CardContent className="flex flex-col gap-5">
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon className="size-4" aria-hidden="true" />
+                {label}
+              </p>
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                {loadingTasks ? (
+                  <Skeleton className="h-10 w-12" />
+                ) : (
+                  <p className="text-5xl leading-none font-light tabular-nums">{value}</p>
+                )}
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className={cn('size-1.5 rounded-full', dot)} aria-hidden="true" />
+                  {note}
+                </p>
+              </div>
             </CardContent>
           </Card>
         ))}
       </section>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <Card className="rounded-2xl lg:col-span-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 md:mt-6 md:gap-6 lg:grid-cols-5">
+        <Card className={cn(panel, 'lg:col-span-3')}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Upcoming deadlines</CardTitle>
             <Link href="/tasks" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-primary')}>
@@ -128,8 +159,27 @@ export function DashboardView() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <Card className="rounded-2xl">
+        <div className="flex flex-col gap-4 md:gap-6 lg:col-span-2">
+          <Card className={panel}>
+            <CardHeader>
+              <CardTitle>Weekly progress</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {loadingTasks ? (
+                <Skeleton className="h-3 w-full rounded-full" />
+              ) : (
+                <>
+                  <ProgressBar percent={weekPercent} />
+                  <p className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{weekTotal === 0 ? 'No tasks planned this week' : `${doneWeek} of ${weekTotal} tasks done`}</span>
+                    <span>{weekPercent}%</span>
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className={panel}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Today&apos;s classes</CardTitle>
               <Link href="/schedule" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-primary')}>
@@ -146,7 +196,7 @@ export function DashboardView() {
                   {todaysClasses.map((c) => {
                     const s = subjects.get(c.subject_id)
                     return (
-                      <li key={c.id} className="flex items-center gap-3 rounded-xl border p-3" style={{ borderLeftWidth: 4, borderLeftColor: s?.color }}>
+                      <li key={c.id} className={cn(softRow, 'flex items-center gap-3 border-0 p-3')} style={{ borderLeftWidth: 4, borderLeftColor: s?.color }}>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium">{s?.name ?? 'Class'}</p>
                           <p className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
@@ -162,12 +212,17 @@ export function DashboardView() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl">
+          <Card className={panel}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Today&apos;s review plan</CardTitle>
-              <Link href="/review" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-primary')}>
-                Planner <ArrowRight aria-hidden="true" />
-              </Link>
+              <div className="flex items-center gap-2">
+                {todaysReview.length > 0 && (
+                  <span className="text-xs text-muted-foreground">{reviewDone}/{todaysReview.length} done</span>
+                )}
+                <Link href="/review" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-primary')}>
+                  Planner <ArrowRight aria-hidden="true" />
+                </Link>
+              </div>
             </CardHeader>
             <CardContent>
               {loadingSessions ? (
@@ -181,7 +236,7 @@ export function DashboardView() {
                     const exam = examById.get(r.exam_id)
                     return (
                       <li key={r.id}>
-                        <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 hover:bg-muted/50">
+                        <label className={cn(softRow, 'flex cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-muted')}>
                           <Checkbox
                             checked={r.is_done}
                             onCheckedChange={() => toggleSession(r).catch(() => toast.error('Could not update session.'))}
