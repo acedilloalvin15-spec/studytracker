@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { NotificationBell } from '@/components/app/notification-bell'
 import { UserMenu } from '@/components/app/user-menu'
 import { MOBILE_NAV, NAV_ITEMS } from '@/components/app/nav-items'
+import { ACTIONS_SLOT_ID, TITLE_SLOT_ID } from '@/components/app/header-slots'
 import { cn } from '@/lib/utils'
 
 function isActive(pathname: string, href: string) {
@@ -45,9 +46,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col md:gap-4">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 bg-white/70 px-4 backdrop-blur-xl md:top-4 md:h-14 md:justify-end md:rounded-full md:px-4 md:shadow-sm dark:bg-white/5">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 bg-white/70 px-4 backdrop-blur-xl md:top-4 md:h-16 md:rounded-full md:px-6 md:shadow-sm dark:bg-white/5">
           <Logo href="/dashboard" className="md:hidden" />
-          <div className="flex items-center gap-1">
+          <div id={TITLE_SLOT_ID} className="hidden min-w-0 flex-1 md:block" />
+          <div id={ACTIONS_SLOT_ID} className="hidden shrink-0 items-center md:flex" />
+          <div className="ml-auto flex shrink-0 items-center gap-1 md:ml-0">
             <ThemeToggle />
             <NotificationBell />
             <UserMenu />
