@@ -102,6 +102,10 @@ export async function POST(request: Request) {
   try {
     if (ext === 'pdf') {
       parts.push({ inlineData: { mimeType: 'application/pdf', data: buffer.toString('base64') } })
+    } else if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+      const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'png' ? 'image/png' : 'image/webp'
+      parts.push({ text: 'Read all legible educational content in this image, including handwritten notes, labels, and diagrams. Use only what can be read.' })
+      parts.push({ inlineData: { mimeType, data: buffer.toString('base64') } })
     } else if (ext === 'docx') {
       const { value } = await mammoth.extractRawText({ buffer })
       if (value.trim().length < 50) return fail('I could not find enough text in that Word file.')
@@ -111,7 +115,7 @@ export async function POST(request: Request) {
       if (text.trim().length < 50) return fail('That file has too little text to make a reviewer.')
       parts.push({ text: `MATERIAL:\n${text.slice(0, MAX_TEXT_CHARS)}` })
     } else {
-      return fail('Please upload a PDF, Word (.docx), or text (.txt) file. For PowerPoint or .doc files, save them as PDF first.')
+      return fail('Please upload a PDF, Word (.docx), text (.txt/.md), or image (PNG/JPG/WEBP) file. For PowerPoint or .doc files, save them as PDF first.')
     }
   } catch {
     return fail('I could not read that file. Try saving it again as a PDF.')

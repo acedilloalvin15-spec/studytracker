@@ -20,7 +20,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Reviewer } from '@/lib/types'
 
 const MAX_BYTES = 4 * 1024 * 1024
-const ALLOWED = ['pdf', 'docx', 'txt', 'md']
+const ALLOWED = ['pdf', 'docx', 'txt', 'md', 'png', 'jpg', 'jpeg', 'webp']
 
 export function ReviewersView() {
   const router = useRouter()
@@ -39,7 +39,7 @@ export function ReviewersView() {
     if (!f) return
     const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
     if (!ALLOWED.includes(ext)) {
-      toast.error('Please choose a PDF, Word (.docx), or text (.txt) file.')
+      toast.error('Please choose a PDF, Word, text, or image file (PNG, JPG, WEBP).')
       return
     }
     if (f.size > MAX_BYTES) {
@@ -92,19 +92,19 @@ export function ReviewersView() {
     <>
       <PageHeader
         title="Reviewer maker"
-        description="Upload your lesson, handout, or notes and get a summary, key terms, flashcards, and a practice quiz."
+        description="Upload lesson notes, handouts, or a picture of your notes and get a summary, key terms, flashcards, and a practice quiz."
       />
 
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>Make a new reviewer</CardTitle>
-          <CardDescription>PDF, Word (.docx), or text files up to 4 MB.</CardDescription>
+          <CardDescription>PDF, Word (.docx), text, or image files up to 4 MB.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf,.docx,.txt,.md"
+            accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp"
             className="sr-only"
             aria-label="Choose a file"
             onChange={(e) => pick(e.target.files?.[0])}
@@ -129,7 +129,7 @@ export function ReviewersView() {
             ) : (
               <>
                 <span className="font-medium">Tap to choose a file, or drop it here</span>
-                <span className="text-xs text-muted-foreground">PDF, DOCX, or TXT</span>
+                <span className="text-xs text-muted-foreground">PDF, DOCX, TXT, PNG, JPG, or WEBP</span>
               </>
             )}
           </button>
