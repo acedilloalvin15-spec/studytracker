@@ -6,7 +6,7 @@ import {
   saveReviewerSection,
 } from "@/lib/regenerate/data";
 
-// Gemini can take a while; avoid Vercel default short timeout.
+// Gemini can take a while; avoid Vercel's short default timeout.
 export const maxDuration = 60;
 
 const STYLES: Record<string, string> = {
@@ -17,10 +17,11 @@ const STYLES: Record<string, string> = {
 
 export async function POST(
   req: Request,
-     { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+
     const userId = await getCurrentUserId();
     if (!userId) {
       return NextResponse.json({ error: "Not signed in" }, { status: 401 });
@@ -42,7 +43,7 @@ export async function POST(
 
     const shape =
       kind === "quiz"
-        ? `[{"question": "...", "choices": ["...","...","...","..."], "answerIndex": 0, "explanation": "..."}]`
+        ? `[{"question": "...", "options": ["...","...","...","..."], "answer_index": 0, "explanation": "..."}]`
         : `[{"question": "...", "answer": "..."}]`;
 
     const prompt = `You are creating study material from the reviewer below.
@@ -54,7 +55,9 @@ KEY TERMS:
 ${JSON.stringify(reviewer.keyTerms)}
 
 Create exactly ${count} NEW ${
-      kind === "quiz" ? "multiple-choice quiz questions (4 choices each)" : "flashcards"
+      kind === "quiz"
+        ? "multiple-choice quiz questions (exactly 4 options each; answer_index is the 0-based index of the correct option)"
+        : "flashcards"
     }.
 Style: ${styleText}.
 Use only facts supported by the summary and key terms.
@@ -70,8 +73,27 @@ ${shape}`;
       throw new Error("Gemini did not return a non-empty array");
     }
 
+    // Reject badly shaped results so we never save a broken set.
+    if (kind === "quiz") {
+      const ok = items.every(
+        (q: any) =>
+          typeof q.question === "string" &&
+          Array.isArray(q.options) &&
+          q.options.length === 4 &&
+          Number.isInteger(q.answer_index) &&
+          q.answer_index >= 0 &&
+          q.answer_index <= 3
+      );
+      if (!ok) throw new Error("Gemini returned a badly shaped quiz");
+    } else {
+      const ok = items.every(
+        (c: any) => typeof c.question === "string" && typeof c.answer === "string"
+      );
+      if (!ok) throw new Error("Gemini returned badly shaped flashcards");
+    }
+
     // Save only after a valid result, so a failure never wipes the old set.
-    await saveReviewerSection(id, userId, kind, items as any);
+    await saveReviewerSection(id, userId, kind, items);
 
     return NextResponse.json({ items });
   } catch (err) {
