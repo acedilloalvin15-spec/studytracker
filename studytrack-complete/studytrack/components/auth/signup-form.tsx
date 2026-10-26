@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Loader2, MailCheck } from 'lucide-react'
+import { Eye, EyeOff, Loader2, MailCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { FormField } from '@/components/form-field'
 import { GoogleButton, OrDivider } from '@/components/auth/google-button'
+import { AuthSplitCard } from '@/components/auth/auth-split-card'
 import { createClient } from '@/lib/supabase/client'
 import { authRedirectUrl, friendlyAuthError } from '@/lib/auth'
 import { signupSchema, type SignupValues } from '@/lib/validations'
@@ -21,6 +21,7 @@ export function SignupForm() {
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [cooldown, setCooldown] = useState(0)
   const [resending, setResending] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -96,29 +97,38 @@ export function SignupForm() {
     setSentTo(values.email)
   }
 
+  const footer = (
+    <p>
+      Already have an account?{' '}
+      <Link href="/login" className="font-medium text-primary hover:underline">
+        Log in
+      </Link>
+    </p>
+  )
+
   if (sentTo) {
     return (
-      <Card className="rounded-2xl text-center">
-        <CardHeader className="items-center">
-          <span className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <AuthSplitCard footer={footer}>
+        <div className="text-center">
+          <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <MailCheck className="size-6" aria-hidden="true" />
           </span>
-          <CardTitle className="text-2xl">Check your email</CardTitle>
-          <CardDescription>
+          <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
+          <p className="mt-1.5 text-sm text-balance text-muted-foreground">
             We sent a confirmation link to <span className="font-medium text-foreground">{sentTo}</span>.
             Click it to activate your account, then come back and log in. If you don&apos;t see it, check your spam folder.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <Button variant="outline" className="w-full" onClick={resend} disabled={resending || cooldown > 0}>
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <Button variant="outline" className="h-11 w-full rounded-full" onClick={resend} disabled={resending || cooldown > 0}>
             {resending && <Loader2 className="animate-spin" aria-hidden="true" />}
             {cooldown > 0 ? `Send again in ${cooldown}s` : 'Send the email again'}
           </Button>
-          <Button className="w-full" render={<Link href="/login" />}>
+          <Button className="h-11 w-full rounded-full font-semibold" render={<Link href="/login" />}>
             Back to log in
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </AuthSplitCard>
     )
   }
 
@@ -126,41 +136,66 @@ export function SignupForm() {
     'aria-invalid': !!errors[name],
     'aria-describedby': errors[name] ? `${name}-error` : undefined,
   })
+  const pill = 'h-11 rounded-full bg-background/70 px-5'
 
   return (
-    <Card className="rounded-2xl">
-      <CardHeader>
-        <CardTitle className="text-2xl">Create your free account</CardTitle>
-        <CardDescription>Get organized in under a minute. No credit card needed.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <GoogleButton label="Sign up with Google" />
-        <OrDivider />
-        <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
-          <FormField id="fullName" label="Full name" error={errors.fullName?.message}>
-            <Input id="fullName" autoComplete="name" placeholder="Maria Santos" className="h-10" {...field('fullName')} {...register('fullName')} />
-          </FormField>
-          <FormField id="email" label="Email" error={errors.email?.message}>
-            <Input id="email" type="email" autoComplete="email" placeholder="you@school.edu" className="h-10" {...field('email')} {...register('email')} />
-          </FormField>
-          <FormField id="password" label="Password" error={errors.password?.message} hint="At least 8 characters.">
-            <Input id="password" type="password" autoComplete="new-password" className="h-10" {...field('password')} {...register('password')} />
-          </FormField>
-          <FormField id="confirmPassword" label="Confirm password" error={errors.confirmPassword?.message}>
-            <Input id="confirmPassword" type="password" autoComplete="new-password" className="h-10" {...field('confirmPassword')} {...register('confirmPassword')} />
-          </FormField>
-          <Button type="submit" className="h-10" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="animate-spin" aria-hidden="true" />}
-            {isSubmitting ? 'Creating account…' : 'Create account'}
-          </Button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link href="/login" className="font-medium text-primary hover:underline">
-            Log in
-          </Link>
+    <AuthSplitCard footer={footer}>
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold tracking-tight">Create your free account</h1>
+        <p className="mt-1.5 text-sm text-balance text-muted-foreground">
+          Get organized in under a minute. No credit card needed.
         </p>
-      </CardContent>
-    </Card>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+        <FormField id="fullName" label="Full name" error={errors.fullName?.message}>
+          <Input id="fullName" autoComplete="name" placeholder="Maria Santos" className={pill} {...field('fullName')} {...register('fullName')} />
+        </FormField>
+        <FormField id="email" label="Email" error={errors.email?.message}>
+          <Input id="email" type="email" autoComplete="email" placeholder="you@school.edu" className={pill} {...field('email')} {...register('email')} />
+        </FormField>
+        <FormField id="password" label="Password" error={errors.password?.message} hint="At least 8 characters.">
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              className={`${pill} pr-12`}
+              {...field('password')}
+              {...register('password')}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? 'Hide passwords' : 'Show passwords'}
+              aria-pressed={showPassword}
+              className="absolute inset-y-0 right-0 flex w-12 items-center justify-center rounded-r-full text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            >
+              {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+            </button>
+          </div>
+        </FormField>
+        <FormField id="confirmPassword" label="Confirm password" error={errors.confirmPassword?.message}>
+          <Input
+            id="confirmPassword"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            className={pill}
+            {...field('confirmPassword')}
+            {...register('confirmPassword')}
+          />
+        </FormField>
+        <Button type="submit" className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-sm" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="animate-spin" aria-hidden="true" />}
+          {isSubmitting ? 'Creating account…' : 'Create account'}
+        </Button>
+      </form>
+
+      <OrDivider />
+
+      <div className="[&_button]:h-11 [&_button]:rounded-full [&_button]:bg-background/70">
+        <GoogleButton label="Sign up with Google" />
+      </div>
+    </AuthSplitCard>
   )
 }
