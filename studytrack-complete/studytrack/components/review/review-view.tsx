@@ -130,7 +130,7 @@ export function ReviewView() {
           }
         />
       ) : loading ? (
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Skeleton className="h-64 rounded-2xl lg:col-span-2" />
           <Skeleton className="h-64 rounded-2xl lg:col-span-3" />
         </div>
@@ -146,7 +146,7 @@ export function ReviewView() {
           }
         />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Card className="rounded-2xl lg:col-span-2">
             <CardHeader>
               <CardTitle>Upcoming exams</CardTitle>

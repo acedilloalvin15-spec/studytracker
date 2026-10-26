@@ -99,7 +99,7 @@ export function DashboardView() {
         ))}
       </section>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-5">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
         <Card className="rounded-2xl lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Upcoming deadlines</CardTitle>

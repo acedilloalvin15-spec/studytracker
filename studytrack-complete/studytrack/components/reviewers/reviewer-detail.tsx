@@ -101,7 +101,7 @@ export function ReviewerDetail({ id }: { id: string }) {
           {c.key_terms.length === 0 ? (
             <p className="text-sm text-muted-foreground">No key terms were made for this file.</p>
           ) : (
-            <dl className="grid gap-3 md:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {c.key_terms.map((t, i) => (
                 <div key={i} className="rounded-2xl border bg-card p-4">
                   <dt className="font-semibold text-primary">{t.term}</dt>

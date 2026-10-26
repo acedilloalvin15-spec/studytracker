@@ -75,7 +75,7 @@ export function CalendarView() {
     <>
       <PageHeader title="Calendar" description="Deadlines, exams, and classes together. Tap a day to see the details." />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="rounded-2xl lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>

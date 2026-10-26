@@ -84,7 +84,7 @@ export function ScheduleView() {
           }
         />
       ) : isLoading ? (
-        <div className="grid gap-4 md:grid-cols-7">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-7">
           {Array.from({ length: 7 }).map((_, i) => (
             <Skeleton key={i} className="h-40 rounded-2xl" />
           ))}
@@ -123,7 +123,7 @@ export function ScheduleView() {
             />
           )}
 
-          <div className="grid gap-3 md:grid-cols-7">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-7">
             {DAYS.map((d) => {
               const items = byDay(d.value)
               const isToday = d.value === isoDay(new Date())

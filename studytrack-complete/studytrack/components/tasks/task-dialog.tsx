@@ -105,7 +105,7 @@ export function TaskDialog({
           <FormField id="title" label="Title" error={errors.title?.message}>
             <Input id="title" placeholder="e.g. Chapter 5 reading questions" className="h-10" aria-invalid={!!errors.title} {...register('title')} />
           </FormField>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField id="subject_id" label="Subject">
               <Controller
                 control={control}

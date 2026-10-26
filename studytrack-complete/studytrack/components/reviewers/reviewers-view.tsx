@@ -134,7 +134,7 @@ export function ReviewersView() {
             )}
           </button>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <FormField id="rv_title" label="Title (optional)">
               <Input id="rv_title" className="h-10" placeholder="e.g. Cell Biology, Chapter 3" value={title} onChange={(e) => setTitle(e.target.value)} />
             </FormField>
@@ -174,7 +174,7 @@ export function ReviewersView() {
 
       <h2 className="mt-8 mb-3 text-lg font-semibold">Your reviewers</h2>
       {isLoading ? (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {Array.from({ length: 2 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-2xl" />
           ))}
@@ -182,9 +182,9 @@ export function ReviewersView() {
       ) : !reviewers?.length ? (
         <EmptyState icon={FileText} title="No reviewers yet" description="Upload your first file above and your reviewer will be saved here." />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {reviewers.map((r) => (
-            <li key={r.id} className="flex items-start justify-between gap-2 rounded-2xl border bg-card p-4">
+            <li key={r.id} className="flex min-w-0 items-start justify-between gap-2 rounded-2xl border bg-card p-4">
               <Link href={`/reviewers/${r.id}`} className="min-w-0 flex-1 focus-visible:underline">
                 <p className="truncate font-semibold">{r.title}</p>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">

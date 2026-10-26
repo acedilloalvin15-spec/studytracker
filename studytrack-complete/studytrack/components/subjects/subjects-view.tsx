@@ -57,7 +57,7 @@ export function SubjectsView() {
         }
       />
       {isLoading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-36 rounded-2xl" />
           ))}
@@ -74,7 +74,7 @@ export function SubjectsView() {
           }
         />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {subjects.map((s) => {
             const open = (tasks ?? []).filter((t) => t.subject_id === s.id && !t.is_completed).length
             const weekly = (classes ?? []).filter((c) => c.subject_id === s.id).length
