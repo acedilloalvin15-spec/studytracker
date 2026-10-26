@@ -10,7 +10,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then((cache) => Promise.allSettled([OFFLINE_URL, '/icon-192.png', '/icon-512.png'].map((u) => cache.add(u))))
+      .then((cache) => Promise.allSettled([OFFLINE_URL, '/icon-192.png', '/icon-512.png', '/images/hero-student.png'].map((u) => cache.add(u))))
       .then(() => self.skipWaiting()),
   )
 })
