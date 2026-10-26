@@ -47,7 +47,11 @@ export function HeaderContent({
         createPortal(
           <div className="min-w-0 leading-tight">
             <h1 className="truncate text-lg font-semibold tracking-tight">{title}</h1>
-            {description && <p className="truncate text-xs text-muted-foreground">{description}</p>}
+            {description && (
+              <p className="truncate text-xs text-muted-foreground" title={typeof description === 'string' ? description : undefined}>
+                {description}
+              </p>
+            )}
           </div>,
           titleEl,
         )}
