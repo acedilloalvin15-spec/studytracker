@@ -18,9 +18,15 @@ import { SelectField } from '@/components/app/select-field'
 import { useClasses, useSubjectMap, useSubjects } from '@/hooks/use-study-data'
 import { DAYS, formatTime, isoDay } from '@/lib/dates'
 import { createClient } from '@/lib/supabase/client'
+import { insertRow, updateRow } from '@/lib/offline-queue'
 import { classSchema, type ClassValues } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 import type { ClassSession } from '@/lib/types'
+
+/** "08:00" becomes "08:00:00", the same shape the database returns. */
+function withSeconds(time: string) {
+  return time.length === 5 ? `${time}:00` : time
+}
 
 export function ScheduleView() {
   const { data: classes, isLoading } = useClasses()
@@ -46,7 +52,7 @@ export function ScheduleView() {
     if (!deleting) return
     const { error } = await createClient().from('classes').delete().eq('id', deleting.id)
     if (error) {
-      toast.error('Could not delete the class.')
+      toast.error(!navigator.onLine ? 'You are offline. Deleting needs internet.' : 'Could not delete the class.')
       return
     }
     toast.success('Class removed')
@@ -238,20 +244,23 @@ function ClassDialog({
     const payload = {
       subject_id: values.subject_id,
       day_of_week: Number(values.day_of_week),
-      start_time: values.start_time,
-      end_time: values.end_time,
+      start_time: withSeconds(values.start_time),
+      end_time: withSeconds(values.end_time),
       room: values.room?.trim() || null,
     }
-    const supabase = createClient()
-    const { error } = session
-      ? await supabase.from('classes').update(payload).eq('id', session.id)
-      : await supabase.from('classes').insert(payload)
-    if (error) {
+    // Works offline too: the class is saved on this device and sent when the internet is back.
+    const result = session ? await updateRow('classes', session.id, payload) : await insertRow('classes', payload)
+    if (result === 'failed') {
       toast.error('Could not save the class. Please try again.')
       return
     }
-    toast.success(session ? 'Class updated' : 'Class added')
-    await mutate('classes')
+    toast.success(
+      result === 'queued'
+        ? 'Class saved on this device. It will sync when you are back online.'
+        : session
+          ? 'Class updated'
+          : 'Class added',
+    )
     onOpenChange(false)
   }
 
