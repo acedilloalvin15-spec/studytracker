@@ -22,6 +22,7 @@ import { useExams, useReviewSessions, useSubjectMap, useSubjects } from '@/hooks
 import { daysUntil, toDateKey } from '@/lib/dates'
 import { regeneratePlan, toggleSession } from '@/lib/review-actions'
 import { createClient } from '@/lib/supabase/client'
+import { insertRow } from '@/lib/offline-queue'
 import { examSchema, type ExamValues } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 import type { Exam } from '@/lib/types'
@@ -85,7 +86,7 @@ export function ReviewView() {
     if (!deleting) return
     const { error } = await createClient().from('exams').delete().eq('id', deleting.id)
     if (error) {
-      toast.error('Could not delete the exam.')
+      toast.error(!navigator.onLine ? 'You are offline. Deleting needs internet.' : 'Could not delete the exam.')
       return
     }
     toast.success('Exam deleted')
@@ -289,15 +290,21 @@ function ExamDialog({
       toast.error('Pick an exam date that is today or later.')
       return
     }
-    const { error } = await createClient()
-      .from('exams')
-      .insert({ subject_id: values.subject_id, exam_date: values.exam_date, title: values.title?.trim() || null })
-    if (error) {
+    // Works offline too: the exam is saved on this device and sent when the internet is back.
+    const result = await insertRow('exams', {
+      subject_id: values.subject_id,
+      exam_date: values.exam_date,
+      title: values.title?.trim() || null,
+    })
+    if (result === 'failed') {
       toast.error('Could not save the exam. Please try again.')
       return
     }
-    toast.success('Exam added. Building your plan…')
-    await mutate('exams')
+    toast.success(
+      result === 'queued'
+        ? 'Exam saved on this device. Your plan is built here and will sync when you are back online.'
+        : 'Exam added. Building your plan…',
+    )
     onOpenChange(false)
     await onCreated()
   }
