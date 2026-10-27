@@ -15,6 +15,7 @@ import { EmptyState, PageHeader } from '@/components/app/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useClasses, useSubjects, useTasks } from '@/hooks/use-study-data'
 import { createClient } from '@/lib/supabase/client'
+import { insertRow, updateRow } from '@/lib/offline-queue'
 import { subjectSchema, type SubjectValues } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 import type { Subject } from '@/lib/types'
@@ -38,7 +39,7 @@ export function SubjectsView() {
     if (!deleting) return
     const { error } = await createClient().from('subjects').delete().eq('id', deleting.id)
     if (error) {
-      toast.error('Could not delete the subject.')
+      toast.error(!navigator.onLine ? 'You are offline. Deleting needs internet.' : 'Could not delete the subject.')
       return
     }
     toast.success(`${deleting.name} deleted`)
@@ -151,17 +152,20 @@ function SubjectDialog({
   }, [open, subject, reset, usedColors])
 
   async function onSubmit(values: SubjectValues) {
-    const supabase = createClient()
     const payload = { name: values.name, teacher: values.teacher || null, color: values.color }
-    const { error } = subject
-      ? await supabase.from('subjects').update(payload).eq('id', subject.id)
-      : await supabase.from('subjects').insert(payload)
-    if (error) {
+    // Works offline too: the subject is saved on this device and sent when the internet is back.
+    const result = subject ? await updateRow('subjects', subject.id, payload) : await insertRow('subjects', payload)
+    if (result === 'failed') {
       toast.error('Could not save the subject.')
       return
     }
-    toast.success(subject ? 'Subject updated' : `${values.name} added`)
-    await mutate('subjects')
+    toast.success(
+      result === 'queued'
+        ? 'Subject saved on this device. It will sync when you are back online.'
+        : subject
+          ? 'Subject updated'
+          : `${values.name} added`,
+    )
     onOpenChange(false)
   }
 
