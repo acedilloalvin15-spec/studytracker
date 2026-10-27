@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { addDays, format, parseISO } from 'date-fns'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { mutate } from 'swr'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -14,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { FormField } from '@/components/form-field'
 import { SelectField } from '@/components/app/select-field'
 import { useSubjects } from '@/hooks/use-study-data'
-import { createClient } from '@/lib/supabase/client'
+import { insertRow, updateRow } from '@/lib/offline-queue'
 import { taskSchema, type TaskValues } from '@/lib/validations'
 import type { Task } from '@/lib/types'
 
@@ -69,7 +68,6 @@ export function TaskDialog({
   }, [open, task, reset])
 
   async function onSubmit(values: TaskValues) {
-    const supabase = createClient()
     const payload = {
       title: values.title,
       subject_id: values.subject_id && values.subject_id !== 'none' ? values.subject_id : null,
@@ -77,15 +75,19 @@ export function TaskDialog({
       priority: values.priority,
       notes: values.notes?.trim() || null,
     }
-    const { error } = task
-      ? await supabase.from('tasks').update(payload).eq('id', task.id)
-      : await supabase.from('tasks').insert(payload)
-    if (error) {
+    // Works offline too: the task is saved on this device and sent when the internet is back.
+    const result = task ? await updateRow('tasks', task.id, payload) : await insertRow('tasks', payload)
+    if (result === 'failed') {
       toast.error('Could not save the task. Please try again.')
       return
     }
-    toast.success(task ? 'Task updated' : 'Task added')
-    await mutate('tasks')
+    toast.success(
+      result === 'queued'
+        ? 'Task saved on this device. It will sync when you are back online.'
+        : task
+          ? 'Task updated'
+          : 'Task added',
+    )
     onOpenChange(false)
   }
 
