@@ -3,6 +3,7 @@
 import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { saveOffline } from '@/lib/offline'
+import { applyPending } from '@/lib/offline-queue'
 import type {
   ClassSession,
   Exam,
@@ -17,7 +18,8 @@ async function fetchTable<T>(table: string, order: string, ascending = true): Pr
   const supabase = createClient()
   const { data, error } = await supabase.from(table).select('*').order(order, { ascending })
   if (error) throw error
-  const rows = (data ?? []) as T[]
+  // Changes made offline that are not sent yet stay visible until they are saved.
+  const rows = applyPending(table, (data ?? []) as T[])
   saveOffline(table, rows)
   return rows
 }
