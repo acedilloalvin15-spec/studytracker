@@ -39,9 +39,8 @@ export function OfflineBanner() {
           <span className="font-medium">Saving your offline changes…{waiting}</span>
         ) : (
           <>
-            <span className="font-medium">You&apos;re offline.</span> You can still add and edit tasks, subjects, classes
-            and exams. They&apos;ll be saved online when the internet is back.{waiting} Deleting and the Reviewer maker need
-            internet.
+            <span className="font-medium">You&apos;re offline.</span> Anything you add, edit or delete is saved on this
+            device and sent online when the internet is back.{waiting} The Reviewer maker needs internet.
           </>
         )}
       </p>
