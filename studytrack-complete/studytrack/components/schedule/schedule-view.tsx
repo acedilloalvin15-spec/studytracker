@@ -6,7 +6,6 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { BookMarked, CalendarRange, Clock, Loader2, MapPin, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { mutate } from 'swr'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -17,8 +16,7 @@ import { EmptyState, PageHeader } from '@/components/app/shared'
 import { SelectField } from '@/components/app/select-field'
 import { useClasses, useSubjectMap, useSubjects } from '@/hooks/use-study-data'
 import { DAYS, formatTime, isoDay } from '@/lib/dates'
-import { createClient } from '@/lib/supabase/client'
-import { insertRow, updateRow } from '@/lib/offline-queue'
+import { deleteRow, insertRow, updateRow } from '@/lib/offline-queue'
 import { classSchema, type ClassValues } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 import type { ClassSession } from '@/lib/types'
@@ -50,13 +48,12 @@ export function ScheduleView() {
 
   async function confirmDelete() {
     if (!deleting) return
-    const { error } = await createClient().from('classes').delete().eq('id', deleting.id)
-    if (error) {
-      toast.error(!navigator.onLine ? 'You are offline. Deleting needs internet.' : 'Could not delete the class.')
+    const result = await deleteRow('classes', deleting.id)
+    if (result === 'failed') {
+      toast.error('Could not delete the class.')
       return
     }
-    toast.success('Class removed')
-    await mutate('classes')
+    toast.success(result === 'queued' ? 'Class removed on this device. It will sync when you are back online.' : 'Class removed')
   }
 
   const byDay = (day: number) =>
