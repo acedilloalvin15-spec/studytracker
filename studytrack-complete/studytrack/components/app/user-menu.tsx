@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BookMarked, Download, FileText, LogOut, Settings, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,13 +17,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { initials, useCurrentUser } from '@/components/app/user-provider'
 import { createClient } from '@/lib/supabase/client'
-import { promptInstall, useCanInstall } from '@/lib/install-prompt'
 import { clearOfflineData } from '@/lib/offline'
 
 export function UserMenu() {
   const router = useRouter()
   const { profile, email } = useCurrentUser()
-  const canInstall = useCanInstall()
+  const [showDownload, setShowDownload] = useState(false)
+
+  // Offer the Android app file on Android phones, but not inside the installed app itself.
+  useEffect(() => {
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+    setShowDownload(/android/i.test(navigator.userAgent) && !standalone)
+  }, [])
 
   async function signOut() {
     const supabase = createClient()
@@ -63,9 +69,13 @@ export function UserMenu() {
         <DropdownMenuItem onClick={() => router.push('/settings')}>
           <Settings aria-hidden="true" /> Settings
         </DropdownMenuItem>
-        {canInstall && (
-          <DropdownMenuItem onClick={() => void promptInstall()}>
-            <Download aria-hidden="true" /> Install app
+        {showDownload && (
+          <DropdownMenuItem
+            onClick={() => {
+              window.location.href = '/downloads/studytrack.apk'
+            }}
+          >
+            <Download aria-hidden="true" /> Download Android app
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
