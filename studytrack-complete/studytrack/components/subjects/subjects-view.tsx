@@ -5,7 +5,6 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { BookMarked, Check, Loader2, Pencil, Plus, Trash2, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
-import { mutate } from 'swr'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -14,8 +13,7 @@ import { ConfirmDialog } from '@/components/app/confirm-dialog'
 import { EmptyState, PageHeader } from '@/components/app/shared'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useClasses, useSubjects, useTasks } from '@/hooks/use-study-data'
-import { createClient } from '@/lib/supabase/client'
-import { insertRow, updateRow } from '@/lib/offline-queue'
+import { deleteRow, insertRow, updateRow } from '@/lib/offline-queue'
 import { subjectSchema, type SubjectValues } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 import type { Subject } from '@/lib/types'
@@ -37,13 +35,12 @@ export function SubjectsView() {
 
   async function confirmDelete() {
     if (!deleting) return
-    const { error } = await createClient().from('subjects').delete().eq('id', deleting.id)
-    if (error) {
-      toast.error(!navigator.onLine ? 'You are offline. Deleting needs internet.' : 'Could not delete the subject.')
+    const result = await deleteRow('subjects', deleting.id)
+    if (result === 'failed') {
+      toast.error('Could not delete the subject.')
       return
     }
-    toast.success(`${deleting.name} deleted`)
-    await Promise.all(['subjects', 'tasks', 'classes', 'exams', 'review_sessions'].map((k) => mutate(k)))
+    toast.success(result === 'queued' ? `${deleting.name} deleted on this device. It will sync when you are back online.` : `${deleting.name} deleted`)
   }
 
   return (
