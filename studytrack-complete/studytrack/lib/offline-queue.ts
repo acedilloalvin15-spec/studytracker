@@ -18,6 +18,7 @@ export type Row = { id: string } & Record<string, unknown>
 export type QueueOp =
   | { kind: 'insert'; table: TableName; row: Row }
   | { kind: 'update'; table: TableName; id: string; patch: Record<string, unknown> }
+  | { kind: 'delete'; table: TableName; id: string }
   | { kind: 'clearPlan'; fromDate: string }
 export type WriteResult = 'synced' | 'queued' | 'failed'
 
@@ -91,7 +92,16 @@ export function usePendingCount() {
 /* ---------- showing changes on screen right away ---------- */
 
 function opTables(op: QueueOp): TableName[] {
-  return op.kind === 'clearPlan' ? ['review_sessions'] : [op.table]
+  switch (op.kind) {
+    case 'clearPlan':
+      return ['review_sessions']
+    case 'delete':
+      if (op.table === 'subjects') return [...TABLES]
+      if (op.table === 'exams') return ['exams', 'review_sessions']
+      return [op.table]
+    default:
+      return [op.table]
+  }
 }
 
 function sortRows(table: TableName, rows: Row[]): Row[] {
@@ -107,6 +117,16 @@ function applyOp(op: QueueOp, table: TableName, rows: Row[]): Row[] {
     case 'update':
       if (op.table !== table) return rows
       return rows.map((r) => (r.id === op.id ? { ...r, ...op.patch } : r))
+    case 'delete': {
+      if (op.table === table) return rows.filter((r) => r.id !== op.id)
+      // Same clean-up the database does: a deleted subject takes its classes, exams and sessions with it.
+      if (op.table === 'subjects') {
+        if (table === 'tasks') return rows.map((r) => (r.subject_id === op.id ? { ...r, subject_id: null } : r))
+        return rows.filter((r) => r.subject_id !== op.id)
+      }
+      if (op.table === 'exams' && table === 'review_sessions') return rows.filter((r) => r.exam_id !== op.id)
+      return rows
+    }
     case 'clearPlan':
       if (table !== 'review_sessions') return rows
       return rows.filter((r) => !(r.is_done === false && String(r.session_date ?? '') >= op.fromDate))
@@ -166,6 +186,8 @@ function exec(op: QueueOp): PromiseLike<unknown> {
       return supabase.from(op.table).insert(op.row)
     case 'update':
       return supabase.from(op.table).update(op.patch).eq('id', op.id)
+    case 'delete':
+      return supabase.from(op.table).delete().eq('id', op.id)
     case 'clearPlan':
       return supabase.from('review_sessions').delete().eq('is_done', false).gte('session_date', op.fromDate)
   }
@@ -192,30 +214,36 @@ function revalidate(tables: TableName[]) {
 
 let flushing = false
 
+async function drainQueue(): Promise<{ done: number; dropped: number }> {
+  let done = 0
+  let dropped = 0
+  for (;;) {
+    const queue = getQueue()
+    if (!queue.length) break
+    const result = await runOp(queue[0], FLUSH_TIMEOUT_MS)
+    if (result === 'network') break
+    setQueue(getQueue().slice(1))
+    if (result === 'ok') done++
+    else {
+      dropped++
+      console.warn('A change could not be saved and was skipped:', queue[0])
+    }
+  }
+  if (done || dropped) await revalidate(TABLES)
+  return { done, dropped }
+}
+
 /** Sends waiting changes in order. Stops when the connection is gone and tries again later. */
 export async function flushQueue(): Promise<{ done: number; dropped: number }> {
   if (flushing || !isOnline()) return { done: 0, dropped: 0 }
   flushing = true
-  let done = 0
-  let dropped = 0
   try {
-    for (;;) {
-      const queue = getQueue()
-      if (!queue.length) break
-      const result = await runOp(queue[0], FLUSH_TIMEOUT_MS)
-      if (result === 'network') break
-      setQueue(getQueue().slice(1))
-      if (result === 'ok') done++
-      else {
-        dropped++
-        console.warn('A change could not be saved and was skipped:', queue[0])
-      }
-    }
+    // The lock makes sure only one tab or window sends the waiting list at a time.
+    if ('locks' in navigator) return await navigator.locks.request('studytrack-flush', () => drainQueue())
+    return await drainQueue()
   } finally {
     flushing = false
   }
-  if (done || dropped) await revalidate(TABLES)
-  return { done, dropped }
 }
 
 /* ---------- what the screens call ---------- */
@@ -267,4 +295,8 @@ export function updateRow(
   options?: { optimistic?: boolean },
 ): Promise<WriteResult> {
   return writeOp({ kind: 'update', table, id, patch }, options?.optimistic)
+}
+
+export function deleteRow(table: TableName, id: string): Promise<WriteResult> {
+  return writeOp({ kind: 'delete', table, id }, true)
 }
