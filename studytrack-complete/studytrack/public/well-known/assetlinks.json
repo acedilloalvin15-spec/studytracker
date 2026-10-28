@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.studytracker_eight_theta.twa",
+        "sha256_cert_fingerprints": ["5E:A9:99:72:FE:BD:92:A9:2B:20:1D:3F:4A:29:CA:62:69:62:13:04:D4:E0:1A:1A:4A:2E:AD:DE:1C:8E:B3:91"]
+      }
+    }]
