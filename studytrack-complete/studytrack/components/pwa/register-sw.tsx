@@ -1,29 +1,21 @@
 'use client'
 
 import { useEffect } from 'react'
-import { listenForInstallPrompt } from '@/lib/install-prompt'
+import { startInstallCapture } from '@/lib/install'
 
 export function RegisterSW() {
   useEffect(() => {
-    const stopListening = listenForInstallPrompt()
-    let stopWaiting: (() => void) | undefined
-
-    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
-      const register = () => {
-        navigator.serviceWorker.register('/sw.js').catch(() => undefined)
-      }
-      if (document.readyState === 'complete') {
-        register()
-      } else {
-        window.addEventListener('load', register)
-        stopWaiting = () => window.removeEventListener('load', register)
-      }
+    startInstallCapture()
+    if (process.env.NODE_ENV !== 'production' || !('serviceWorker' in navigator)) return
+    const register = () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => undefined)
     }
-
-    return () => {
-      stopListening()
-      stopWaiting?.()
+    if (document.readyState === 'complete') {
+      register()
+      return
     }
+    window.addEventListener('load', register)
+    return () => window.removeEventListener('load', register)
   }, [])
   return null
 }

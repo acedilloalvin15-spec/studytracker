@@ -1,10 +1,10 @@
 'use client'
 
 import { useSyncExternalStore } from 'react'
-import { RefreshCw, WifiOff } from 'lucide-react'
-import { usePendingCount } from '@/lib/offline-queue'
+import { CloudUpload, WifiOff } from 'lucide-react'
+import { pendingCountSnapshot, subscribeQueue } from '@/lib/offline-queue'
 
-function subscribe(onChange: () => void) {
+function subscribeOnline(onChange: () => void) {
   window.addEventListener('online', onChange)
   window.addEventListener('offline', onChange)
   return () => {
@@ -14,33 +14,29 @@ function subscribe(onChange: () => void) {
 }
 
 export function OfflineBanner() {
-  const online = useSyncExternalStore(
-    subscribe,
-    () => navigator.onLine,
-    () => true,
-  )
-  const pending = usePendingCount()
-  if (online && pending === 0) return null
+  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true)
+  const pending = useSyncExternalStore(subscribeQueue, pendingCountSnapshot, () => 0)
 
-  const waiting = pending > 0 ? ` ${pending} change${pending === 1 ? ' is' : 's are'} waiting to be saved online.` : ''
+  if (online && pending === 0) return null
 
   return (
     <div
       role="status"
-      className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] z-50 mx-auto flex max-w-md items-start gap-2 rounded-2xl border bg-card px-4 py-3 text-sm shadow-lg md:bottom-4"
+      className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] z-50 mx-auto flex max-w-md items-start gap-2 rounded-2xl border bg-card px-4 py-3 text-sm shadow-lg md:bottom-4"
     >
       {online ? (
-        <RefreshCw className="mt-0.5 size-4 shrink-0 animate-spin text-primary" aria-hidden="true" />
+        <CloudUpload className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
       ) : (
         <WifiOff className="mt-0.5 size-4 shrink-0 text-urgent" aria-hidden="true" />
       )}
       <p className="text-pretty">
         {online ? (
-          <span className="font-medium">Saving your offline changes…{waiting}</span>
+          <>Saving {pending} change{pending === 1 ? '' : 's'} you made offline…</>
         ) : (
           <>
-            <span className="font-medium">You&apos;re offline.</span> Anything you add, edit or delete is saved on this
-            device and sent online when the internet is back.{waiting} The Reviewer maker needs internet.
+            <span className="font-medium">You&apos;re offline.</span> You can still add and change deadlines, subjects,
+            classes, and exams. They are saved on your phone and sent when you are back online.
+            {pending > 0 && <> Waiting to send: {pending}.</>}
           </>
         )}
       </p>
