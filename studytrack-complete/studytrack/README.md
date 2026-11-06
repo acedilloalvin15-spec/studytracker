@@ -15,7 +15,7 @@ Built with Next.js, Tailwind CSS, shadcn/ui, and Supabase (login + database).
 | `/subjects` | Your subjects and their colors |
 | `/schedule` | Weekly class timetable |
 | `/review` | Exams and the automatic day-by-day review plan |
-| `/reviewers` | Upload a PDF, Word, or text file and get a summary, key terms, flashcards, and a practice quiz (uses Google Gemini) |
+| `/reviewers` | Upload a PDF, Word, or text file (or paste text) and get a summary, key terms, flashcards, and a practice quiz. Written by Ashna AI online, with a simple-rules backup |
 | `/calendar` | Monthly view of deadlines, exams, and classes |
 | `/settings` | Profile, reminders, theme, change password, delete account |
 
@@ -57,18 +57,18 @@ Add `SUPABASE_SERVICE_ROLE_KEY` (from Supabase **Project Settings > API**) to yo
 - Reminders appear in the notification bell inside the app. The "Email reminders" switch only saves your choice; sending emails would need a scheduled job, which is not included.
 - All data is protected with Row Level Security, so each student only sees their own rows.
 
-## AI Reviewer setup (Gemini)
+## Reviewer maker setup (Ashna AI)
 
-1. In Supabase **SQL Editor**, run `supabase/reviewers.sql` once (new installs already get it from `schema.sql`).
-2. Go to **aistudio.google.com**, sign in, click **Get API key**, and create a key.
-3. In Vercel, open **Settings > Environment Variables** and add `GEMINI_API_KEY` with your key. Use the name exactly, with no `NEXT_PUBLIC_` in front, so the key stays private on the server.
-4. Optional: add `GEMINI_MODEL` if you want a different model than the default (`gemini-flash-latest`). Google changes model names from time to time, and AI Studio shows which ones are free for your key.
+1. In Supabase **SQL Editor**, run `supabase/reviewers.sql` once (new installs already get it from `schema.sql`). Run `supabase/avatars.sql` too if you want profile pictures.
+2. Create an API key in your Ashna AI account.
+3. In Vercel, open **Settings > Environment Variables** and add `ASHNA_API_KEY` with your key. Type the name exactly, with no `NEXT_PUBLIC_` in front, so the key stays private on the server. Never put the key on GitHub.
+4. Optional: add `ASHNA_MODEL` to use another model (the default is `claude-sonnet-5`; `gpt-4o-mini` is another model id Ashna lists) and `ASHNA_BASE_URL` (the default is `https://api.ashna.ai/v1/api`).
 5. Redeploy from the **Deployments** tab.
 
-Good to know:
-- Files must be under 4 MB (a Vercel limit). Supported: PDF, DOCX, TXT. Save PowerPoint or old .doc files as PDF first.
-- The free Gemini tier has small daily limits that Google can change. When the limit is reached, the page asks the student to try again later.
-- On the free tier, Google may use what you send to improve its products, so tell students not to upload private documents.
+How it works:
+- Online, the text of the student's file or pasted notes is sent from our server to Ashna AI, which writes the summary, key terms, flashcards, and quiz. Each student can use the AI for 10 reviewers per hour; after that, simple rules are used.
+- If Ashna AI is busy, out of quota, or gives an unusable answer, simple rules (headings, definitions, key sentences) make the reviewer instead. Offline, pasted text and `.txt` files use the same simple rules on the phone.
+- PDF and Word files are read by the server (no file is kept) and need internet. Files must be under 4 MB (a Vercel limit). Scanned pages and pictures can't be read.
 
 ## Using StudyTrack on an Android phone
 
