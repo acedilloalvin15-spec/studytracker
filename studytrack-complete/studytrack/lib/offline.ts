@@ -1,7 +1,6 @@
 // Helpers that keep a copy of the student's data on the device so the app can be read offline.
 const PREFIX = 'studytrack-offline:'
 const OWNER_KEY = `${PREFIX}owner`
-const QUEUE_EVENT = 'studytrack-queue-changed'
 
 export function saveOffline(key: string, data: unknown) {
   try {
@@ -11,8 +10,7 @@ export function saveOffline(key: string, data: unknown) {
   }
 }
 
-/** Reads one saved item (for example 'tasks'). Returns null when nothing is saved. */
-export function readOffline<T>(key: string): T | null {
+export function readOffline<T = unknown>(key: string): T | null {
   try {
     const raw = localStorage.getItem(PREFIX + key)
     return raw ? (JSON.parse(raw) as T) : null
@@ -27,8 +25,6 @@ export function readAllOffline(): [string, unknown][] {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
       if (!k || !k.startsWith(PREFIX) || k === OWNER_KEY) continue
-      // Names starting with "__" are internal (like the list of changes waiting to sync).
-      if (k.slice(PREFIX.length).startsWith('__')) continue
       out.push([k.slice(PREFIX.length), JSON.parse(localStorage.getItem(k) ?? 'null')])
     }
   } catch {
@@ -53,7 +49,7 @@ export function setOfflineOwner(userId: string) {
   }
 }
 
-/** Removes the saved copy of the data, unsynced changes and saved pages. Called on log out and when another account logs in. */
+/** Removes the saved copy of the data and saved pages. Called on log out and when another account logs in. */
 export async function clearOfflineData() {
   try {
     const keys: string[] = []
@@ -62,7 +58,7 @@ export async function clearOfflineData() {
       if (k?.startsWith(PREFIX)) keys.push(k)
     }
     keys.forEach((k) => localStorage.removeItem(k))
-    window.dispatchEvent(new Event(QUEUE_EVENT))
+    localStorage.removeItem('studytrack-offline-queue')
   } catch {
     // Ignore.
   }

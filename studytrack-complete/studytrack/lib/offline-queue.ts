@@ -1,81 +1,33 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { toast } from 'sonner'
 import { mutate } from 'swr'
-import { createClient } from '@/lib/supabase/client'
-import { readOffline, saveOffline } from '@/lib/offline'
+import type { QueuedOp } from '@/lib/offline-ops'
 
-/*
- * Offline-friendly saving.
- * - Online: changes are saved to Supabase right away.
- * - Offline (or a very slow connection): changes are saved on the device, shown immediately,
- *   put in a waiting list, and sent to Supabase in order when the connection comes back.
- * New items get their ID on the device, so sending the same change twice never makes duplicates.
- */
+// Changes made without internet wait here (in the phone's storage) and are sent when the connection returns.
+export const QUEUE_KEY = 'studytrack-offline-queue'
+const QUEUE_EVENT = 'studytrack:queue'
+export const QUEUEABLE_TABLES = ['tasks', 'subjects', 'classes', 'exams', 'review_sessions', 'reviewers']
 
-export type TableName = 'subjects' | 'tasks' | 'classes' | 'exams' | 'review_sessions'
-export type Row = { id: string } & Record<string, unknown>
-export type QueueOp =
-  | { kind: 'insert'; table: TableName; row: Row }
-  | { kind: 'update'; table: TableName; id: string; patch: Record<string, unknown> }
-  | { kind: 'delete'; table: TableName; id: string }
-  | { kind: 'clearPlan'; fromDate: string }
-export type WriteResult = 'synced' | 'queued' | 'failed'
-
-const QUEUE_KEY = 'studytrack-offline:__queue'
-const QUEUE_EVENT = 'studytrack-queue-changed'
-const ONLINE_TIMEOUT_MS = 10_000
-const FLUSH_TIMEOUT_MS = 20_000
-const TABLES: TableName[] = ['subjects', 'tasks', 'classes', 'exams', 'review_sessions']
-const SORT_KEY: Record<TableName, string> = {
-  subjects: 'name',
-  tasks: 'due_at',
-  classes: 'start_time',
-  exams: 'exam_date',
-  review_sessions: 'session_date',
-}
-const DEFAULTS: Partial<Record<TableName, Record<string, unknown>>> = {
-  tasks: { is_completed: false, completed_at: null },
-}
-
-export function isOnline() {
-  return typeof navigator === 'undefined' || navigator.onLine
-}
-
-export function newId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0
-    return (c === 'x' ? r : (r & 3) | 8).toString(16)
-  })
-}
-
-/* ---------- the waiting list ---------- */
-
-function getQueue(): QueueOp[] {
+export function readQueue(): QueuedOp[] {
   try {
-    const raw = localStorage.getItem(QUEUE_KEY)
-    return raw ? (JSON.parse(raw) as QueueOp[]) : []
+    return JSON.parse(localStorage.getItem(QUEUE_KEY) ?? '[]') as QueuedOp[]
   } catch {
     return []
   }
 }
 
-function setQueue(queue: QueueOp[]) {
+function writeQueue(ops: QueuedOp[]) {
   try {
-    if (queue.length) localStorage.setItem(QUEUE_KEY, JSON.stringify(queue))
+    if (ops.length) localStorage.setItem(QUEUE_KEY, JSON.stringify(ops))
     else localStorage.removeItem(QUEUE_KEY)
   } catch {
-    // Storage full or blocked.
+    // Storage full: the change is kept only for this session.
   }
   window.dispatchEvent(new Event(QUEUE_EVENT))
 }
 
-export function pendingCount() {
-  return getQueue().length
-}
-
-function subscribe(onChange: () => void) {
+export function subscribeQueue(onChange: () => void) {
   window.addEventListener(QUEUE_EVENT, onChange)
   window.addEventListener('storage', onChange)
   return () => {
@@ -84,219 +36,116 @@ function subscribe(onChange: () => void) {
   }
 }
 
-/** How many changes are still waiting to be sent. */
-export function usePendingCount() {
-  return useSyncExternalStore(subscribe, () => getQueue().length, () => 0)
-}
-
-/* ---------- showing changes on screen right away ---------- */
-
-function opTables(op: QueueOp): TableName[] {
-  switch (op.kind) {
-    case 'clearPlan':
-      return ['review_sessions']
-    case 'delete':
-      if (op.table === 'subjects') return [...TABLES]
-      if (op.table === 'exams') return ['exams', 'review_sessions']
-      return [op.table]
-    default:
-      return [op.table]
+let cachedRaw = ''
+let cachedCount = 0
+export function pendingCountSnapshot() {
+  const raw = localStorage.getItem(QUEUE_KEY) ?? ''
+  if (raw !== cachedRaw) {
+    cachedRaw = raw
+    cachedCount = readQueue().length
   }
+  return cachedCount
 }
 
-function sortRows(table: TableName, rows: Row[]): Row[] {
-  const key = SORT_KEY[table]
-  return [...rows].sort((a, b) => String(a[key] ?? '').localeCompare(String(b[key] ?? '')))
+export function newId() {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0
+        return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+      })
 }
 
-function applyOp(op: QueueOp, table: TableName, rows: Row[]): Row[] {
-  switch (op.kind) {
-    case 'insert':
-      if (op.table !== table || rows.some((r) => r.id === op.row.id)) return rows
-      return [...rows, op.row]
-    case 'update':
-      if (op.table !== table) return rows
-      return rows.map((r) => (r.id === op.id ? { ...r, ...op.patch } : r))
-    case 'delete': {
-      if (op.table === table) return rows.filter((r) => r.id !== op.id)
-      // Same clean-up the database does: a deleted subject takes its classes, exams and sessions with it.
-      if (op.table === 'subjects') {
-        if (table === 'tasks') return rows.map((r) => (r.subject_id === op.id ? { ...r, subject_id: null } : r))
-        return rows.filter((r) => r.subject_id !== op.id)
-      }
-      if (op.table === 'exams' && table === 'review_sessions') return rows.filter((r) => r.exam_id !== op.id)
-      return rows
+/**
+ * Used by the database client. Online, writes go straight through. Offline (or while older
+ * changes are still waiting), they are saved and the app carries on as if they worked.
+ */
+export async function offlineFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const method = (init?.method ?? 'GET').toUpperCase()
+  if (typeof input !== 'string' && !(input instanceof URL)) return fetch(input, init)
+
+  const url = new URL(String(input), window.location.href)
+  const table = /\/rest\/v1\/([a-z_]+)$/.exec(url.pathname)?.[1]
+  if (!table || !QUEUEABLE_TABLES.includes(table) || !['POST', 'PATCH', 'DELETE'].includes(method)) {
+    return fetch(input, init)
+  }
+
+  // New rows get their id here, so later offline changes can point at them.
+  let body: unknown = null
+  if (typeof init?.body === 'string' && init.body) {
+    body = JSON.parse(init.body)
+    if (method === 'POST') {
+      const items = (Array.isArray(body) ? body : [body]) as Record<string, unknown>[]
+      items.forEach((item) => {
+        if (!item.id) item.id = newId()
+      })
+      const columns = url.searchParams.get('columns')
+      if (columns !== null && !columns.includes('"id"')) url.searchParams.set('columns', `${columns},"id"`)
     }
-    case 'clearPlan':
-      if (table !== 'review_sessions') return rows
-      return rows.filter((r) => !(r.is_done === false && String(r.session_date ?? '') >= op.fromDate))
   }
-}
+  const sendInit: RequestInit = { ...init, body: body === null ? init?.body : JSON.stringify(body) }
 
-function applyLocal(ops: QueueOp[]) {
-  const tables = new Set<TableName>(ops.flatMap(opTables))
-  tables.forEach((table) => {
-    mutate<Row[]>(
-      table,
-      (current) => {
-        const base = current ?? readOffline<Row[]>(table) ?? []
-        const next = sortRows(table, ops.reduce((rows, op) => applyOp(op, table, rows), base))
-        saveOffline(table, next)
-        return next
-      },
-      { revalidate: false },
-    )
-  })
-}
-
-/** Adds the changes that have not been sent yet to rows that were just loaded from the server. */
-export function applyPending<T>(table: string, rows: T[]): T[] {
-  if (!(TABLES as string[]).includes(table)) return rows
-  const t = table as TableName
-  const relevant = getQueue().filter((op) => opTables(op).includes(t))
-  if (!relevant.length) return rows
-  const merged = relevant.reduce((acc, op) => applyOp(op, t, acc), rows as unknown as Row[])
-  return sortRows(t, merged) as unknown as T[]
-}
-
-/* ---------- sending to Supabase ---------- */
-
-type Res = { error: { message: string; code?: string } | null; status?: number }
-
-function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('timeout')), ms)
-    Promise.resolve(promise).then(
-      (v) => {
-        clearTimeout(timer)
-        resolve(v)
-      },
-      (e) => {
-        clearTimeout(timer)
-        reject(e)
-      },
-    )
-  })
-}
-
-function exec(op: QueueOp): PromiseLike<unknown> {
-  const supabase = createClient()
-  switch (op.kind) {
-    case 'insert':
-      return supabase.from(op.table).insert(op.row)
-    case 'update':
-      return supabase.from(op.table).update(op.patch).eq('id', op.id)
-    case 'delete':
-      return supabase.from(op.table).delete().eq('id', op.id)
-    case 'clearPlan':
-      return supabase.from('review_sessions').delete().eq('is_done', false).gte('session_date', op.fromDate)
+  if (navigator.onLine && readQueue().length === 0) {
+    try {
+      return await fetch(url.toString(), sendInit)
+    } catch {
+      // The connection dropped: save the change instead.
+    }
   }
-}
 
-/** ok = saved, network = no connection (try later), rejected = the server refused it. */
-async function runOp(op: QueueOp, timeoutMs: number): Promise<'ok' | 'network' | 'rejected'> {
-  let res: Res
-  try {
-    res = (await withTimeout(exec(op), timeoutMs)) as Res
-  } catch {
-    return 'network'
-  }
-  const { error, status } = res
-  if (!error) return 'ok'
-  if (status === 0 || /fetch|network|timeout|load failed/i.test(error.message)) return 'network'
-  if (op.kind === 'insert' && error.code === '23505') return 'ok' // already saved earlier
-  return 'rejected'
-}
-
-function revalidate(tables: TableName[]) {
-  return Promise.all(tables.map((t) => mutate(t)))
+  const query = url.searchParams.toString()
+  writeQueue([
+    ...readQueue(),
+    { id: newId(), method: method as QueuedOp['method'], table, query, body, createdAt: Date.now() },
+  ])
+  if (navigator.onLine) void flushQueue()
+  return new Response(null, { status: method === 'POST' ? 201 : 204 })
 }
 
 let flushing = false
 
-async function drainQueue(): Promise<{ done: number; dropped: number }> {
-  let done = 0
-  let dropped = 0
-  for (;;) {
-    const queue = getQueue()
-    if (!queue.length) break
-    const result = await runOp(queue[0], FLUSH_TIMEOUT_MS)
-    if (result === 'network') break
-    setQueue(getQueue().slice(1))
-    if (result === 'ok') done++
-    else {
-      dropped++
-      console.warn('A change could not be saved and was skipped:', queue[0])
-    }
-  }
-  if (done || dropped) await revalidate(TABLES)
-  return { done, dropped }
-}
-
-/** Sends waiting changes in order. Stops when the connection is gone and tries again later. */
-export async function flushQueue(): Promise<{ done: number; dropped: number }> {
-  if (flushing || !isOnline()) return { done: 0, dropped: 0 }
+/** Sends the saved changes, oldest first. Safe to call at any time. */
+export async function flushQueue() {
+  if (flushing || typeof window === 'undefined' || !navigator.onLine || readQueue().length === 0) return
   flushing = true
+  let sent = 0
+  let dropped = 0
   try {
-    // The lock makes sure only one tab or window sends the waiting list at a time.
-    if ('locks' in navigator) return await navigator.locks.request('studytrack-flush', () => drainQueue())
-    return await drainQueue()
+    const { createClient } = await import('@/lib/supabase/client')
+    const { data } = await createClient().auth.getSession()
+    const token = data.session?.access_token
+    if (!token) return
+
+    for (;;) {
+      const [op] = readQueue()
+      if (!op) break
+      let res: Response
+      try {
+        res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/${op.table}${op.query ? `?${op.query}` : ''}`, {
+          method: op.method,
+          headers: {
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: op.body == null ? undefined : JSON.stringify(op.body),
+        })
+      } catch {
+        break // Still no connection: try again later.
+      }
+      if (res.status === 401 || res.status >= 500) break // Try again later.
+      if (res.ok || (op.method === 'POST' && res.status === 409)) sent++
+      else dropped++ // The server refused it (for example, the item was deleted elsewhere).
+      writeQueue(readQueue().filter((q) => q.id !== op.id))
+    }
   } finally {
     flushing = false
   }
-}
 
-/* ---------- what the screens call ---------- */
-
-/** Puts several changes on the waiting list at once (used by the review plan). */
-export function enqueueOps(ops: QueueOp[]) {
-  setQueue([...getQueue(), ...ops])
-  applyLocal(ops)
-  if (isOnline()) void flushQueue()
-}
-
-async function writeOp(op: QueueOp, optimistic = false): Promise<WriteResult> {
-  let shown = false
-  if (optimistic) {
-    applyLocal([op])
-    shown = true
+  if (sent + dropped > 0) {
+    QUEUEABLE_TABLES.forEach((t) => mutate(t))
+    if (sent > 0) toast.success(`${sent} change${sent === 1 ? '' : 's'} saved online`)
+    if (dropped > 0) toast.error(`${dropped} change${dropped === 1 ? '' : 's'} made offline could not be saved`)
   }
-  if (isOnline() && getQueue().length === 0) {
-    const result = await runOp(op, ONLINE_TIMEOUT_MS)
-    if (result === 'ok') {
-      await revalidate(opTables(op))
-      return 'synced'
-    }
-    if (result === 'rejected') {
-      if (shown) await revalidate(opTables(op))
-      return 'failed'
-    }
-  }
-  setQueue([...getQueue(), op])
-  if (!shown) applyLocal([op])
-  if (isOnline()) void flushQueue()
-  return 'queued'
-}
-
-export function insertRow(table: TableName, values: Record<string, unknown>): Promise<WriteResult> {
-  const row: Row = {
-    ...(DEFAULTS[table] ?? {}),
-    ...values,
-    id: newId(),
-    created_at: new Date().toISOString(),
-  }
-  return writeOp({ kind: 'insert', table, row })
-}
-
-export function updateRow(
-  table: TableName,
-  id: string,
-  patch: Record<string, unknown>,
-  options?: { optimistic?: boolean },
-): Promise<WriteResult> {
-  return writeOp({ kind: 'update', table, id, patch }, options?.optimistic)
-}
-
-export function deleteRow(table: TableName, id: string): Promise<WriteResult> {
-  return writeOp({ kind: 'delete', table, id }, true)
 }

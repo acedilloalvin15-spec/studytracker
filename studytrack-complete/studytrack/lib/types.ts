@@ -61,6 +61,7 @@ export type ReviewSession = {
 }
 
 export type ReviewerContent = {
+  engine?: 'ashna' | 'rules'
   summary: string
   key_terms: { term: string; definition: string }[]
   flashcards: { question: string; answer: string }[]
