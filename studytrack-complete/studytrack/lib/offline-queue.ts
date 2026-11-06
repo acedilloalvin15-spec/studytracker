@@ -2,6 +2,7 @@
 
 import { toast } from 'sonner'
 import { mutate } from 'swr'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { QueuedOp } from '@/lib/offline-ops'
 
 // Changes made without internet wait here (in the phone's storage) and are sent when the connection returns.
@@ -46,6 +47,8 @@ export function pendingCountSnapshot() {
   }
   return cachedCount
 }
+
+let queuedWrites = 0
 
 export function newId() {
   return typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -94,6 +97,7 @@ export async function offlineFetch(input: RequestInfo | URL, init?: RequestInit)
   }
 
   const query = url.searchParams.toString()
+  queuedWrites++
   writeQueue([
     ...readQueue(),
     { id: newId(), method: method as QueuedOp['method'], table, query, body, createdAt: Date.now() },
@@ -148,4 +152,43 @@ export async function flushQueue() {
     if (sent > 0) toast.success(`${sent} change${sent === 1 ? '' : 's'} saved online`)
     if (dropped > 0) toast.error(`${dropped} change${dropped === 1 ? '' : 's'} made offline could not be saved`)
   }
+}
+
+/* ---------- helpers the screens call ---------- */
+
+export type TableName = 'subjects' | 'tasks' | 'classes' | 'exams' | 'review_sessions'
+/** synced = saved online, queued = saved on this device and sent later, failed = refused. */
+export type WriteResult = 'synced' | 'queued' | 'failed'
+
+async function write(
+  table: TableName,
+  run: (t: ReturnType<SupabaseClient['from']>) => PromiseLike<{ error: unknown }>,
+): Promise<WriteResult> {
+  // Imported here (not at the top) because the database client itself imports this file.
+  const { createClient } = await import('@/lib/supabase/client')
+  const before = queuedWrites
+  let failed = false
+  try {
+    const { error } = await run(createClient().from(table))
+    failed = !!error
+  } catch {
+    failed = true
+  }
+  if (failed) return 'failed'
+  // Deleting a subject or exam also changes the lists that depend on it, so refresh every list.
+  const result: WriteResult = queuedWrites > before ? 'queued' : 'synced'
+  await Promise.all(QUEUEABLE_TABLES.map((t) => mutate(t)))
+  return result
+}
+
+export function insertRow(table: TableName, values: Record<string, unknown>): Promise<WriteResult> {
+  return write(table, (t) => t.insert(values))
+}
+
+export function updateRow(table: TableName, id: string, patch: Record<string, unknown>): Promise<WriteResult> {
+  return write(table, (t) => t.update(patch).eq('id', id))
+}
+
+export function deleteRow(table: TableName, id: string): Promise<WriteResult> {
+  return write(table, (t) => t.delete().eq('id', id))
 }
