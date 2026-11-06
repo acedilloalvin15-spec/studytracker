@@ -29,26 +29,29 @@ export default function PrivacyPage() {
         <ul>
           <li>To run your account and show you your own deadlines, schedule, and reviewers.</li>
           <li>To send you the email that confirms your address or resets your password.</li>
-          <li>To make a reviewer from a file you choose to upload.</li>
+          <li>To make a reviewer from the file or text you choose to give us.</li>
         </ul>
         <p className="mt-2">We do not sell your information and we do not show ads.</p>
       </section>
 
       <section>
-        <h2>Files you upload and AI</h2>
+        <h2>Files, text, and pictures</h2>
         <p>
-          When you make a reviewer, the text or file you upload is sent to Google&apos;s Gemini AI service so it can write the
-          summary, flashcards, and quiz. Please do not upload private or sensitive documents. We keep the reviewer that is
-          created, but we do not keep the original file.
+          When you are online, the text of the material you give the reviewer maker is sent to our server and then to Ashna
+          AI, a third-party AI service, which helps write your reviewer. If Ashna AI is not available, or you are offline,
+          simple rules on your device or our server are used instead. We do not keep the original file. We keep the reviewer
+          that is created. Please do not upload private or sensitive documents. If you add a profile picture, we store that
+          small picture so it can be shown on your profile.
         </p>
       </section>
 
       <section>
         <h2>Services that help us run StudyTrack</h2>
         <ul>
-          <li>Supabase stores accounts and your study data.</li>
+          <li>Supabase stores accounts, your study data, and profile pictures.</li>
           <li>Vercel hosts the website.</li>
-          <li>Google provides Google sign-in (if you choose it) and the Gemini AI.</li>
+          <li>Google provides Google sign-in, if you choose it.</li>
+          <li>Ashna AI helps write reviewers. The text of your material is sent to it when you are online.</li>
         </ul>
       </section>
 
