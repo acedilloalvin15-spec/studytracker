@@ -138,7 +138,7 @@ select u.id, coalesce(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data
 from auth.users u
 on conflict (id) do nothing;
 
--- ---------- AI reviewers (generated from uploaded files) ----------
+-- ---------- Reviewers (made from uploaded files or pasted text) ----------
 
 create table if not exists public.reviewers (
   id uuid primary key default gen_random_uuid(),
@@ -163,29 +163,29 @@ create policy "reviewers_insert_own" on public.reviewers for insert with check (
 create policy "reviewers_update_own" on public.reviewers for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "reviewers_delete_own" on public.reviewers for delete using (auth.uid() = user_id);
 
-
--- ---------- Profile picture storage ----------
--- Public avatar images, with each user's uploads restricted to their own folder.
+-- ---------- Profile pictures ----------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('avatars', 'avatars', true, 3145728, array['image/jpeg', 'image/png', 'image/webp'])
-on conflict (id) do update set
-  public = excluded.public,
-  file_size_limit = excluded.file_size_limit,
-  allowed_mime_types = excluded.allowed_mime_types;
+values ('avatars', 'avatars', true, 1048576, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
 
-drop policy if exists "avatars_read_public" on storage.objects;
-drop policy if exists "avatars_insert_own_folder" on storage.objects;
-drop policy if exists "avatars_update_own_folder" on storage.objects;
-drop policy if exists "avatars_delete_own_folder" on storage.objects;
-create policy "avatars_read_public" on storage.objects
-  for select using (bucket_id = 'avatars');
-create policy "avatars_insert_own_folder" on storage.objects
-  for insert to authenticated
+-- Each student can only change files inside their own folder (named after their user id).
+drop policy if exists "avatars_read" on storage.objects;
+drop policy if exists "avatars_insert_own" on storage.objects;
+drop policy if exists "avatars_update_own" on storage.objects;
+drop policy if exists "avatars_delete_own" on storage.objects;
+
+create policy "avatars_read" on storage.objects for select
+  using (bucket_id = 'avatars');
+
+create policy "avatars_insert_own" on storage.objects for insert to authenticated
   with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "avatars_update_own_folder" on storage.objects
-  for update to authenticated
+
+create policy "avatars_update_own" on storage.objects for update to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)
   with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
-create policy "avatars_delete_own_folder" on storage.objects
-  for delete to authenticated
+
+create policy "avatars_delete_own" on storage.objects for delete to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);

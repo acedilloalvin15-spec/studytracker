@@ -1,4 +1,4 @@
--- StudyTrack: AI reviewers table (run this once in Supabase > SQL Editor)
+-- StudyTrack: reviewers table (run this once in Supabase > SQL Editor)
 
 create table if not exists public.reviewers (
   id uuid primary key default gen_random_uuid(),
