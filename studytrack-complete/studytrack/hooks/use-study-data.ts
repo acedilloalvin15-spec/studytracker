@@ -2,8 +2,7 @@
 
 import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
-import { saveOffline } from '@/lib/offline'
-import { applyPending } from '@/lib/offline-queue'
+import { fetchTableRows } from '@/lib/offline-data'
 import type {
   ClassSession,
   Exam,
@@ -14,14 +13,8 @@ import type {
   Task,
 } from '@/lib/types'
 
-async function fetchTable<T>(table: string, order: string, ascending = true): Promise<T[]> {
-  const supabase = createClient()
-  const { data, error } = await supabase.from(table).select('*').order(order, { ascending })
-  if (error) throw error
-  // Changes made offline that are not sent yet stay visible until they are saved.
-  const rows = applyPending(table, (data ?? []) as T[])
-  saveOffline(table, rows)
-  return rows
+function fetchTable<T>(table: string, order: string, ascending = true): Promise<T[]> {
+  return fetchTableRows<T>(table, order, ascending)
 }
 
 export function useSubjects() {
@@ -72,12 +65,9 @@ export function useReviewers() {
   return useSWR<Reviewer[]>('reviewers', () => fetchTable<Reviewer>('reviewers', 'created_at', false))
 }
 
+/** One reviewer, taken from the saved list so it also works offline and right after it is made. */
 export function useReviewer(id: string) {
-  return useSWR<Reviewer | null>(`reviewer:${id}`, async () => {
-    const { data, error } = await createClient().from('reviewers').select('*').eq('id', id).maybeSingle()
-    if (error) throw error
-    const reviewer = (data as Reviewer | null) ?? null
-    if (reviewer) saveOffline(`reviewer:${id}`, reviewer)
-    return reviewer
-  })
+  const list = useReviewers()
+  const reviewer = list.data?.find((r) => r.id === id) ?? null
+  return { data: reviewer, isLoading: list.isLoading, revalidate: list.mutate }
 }
