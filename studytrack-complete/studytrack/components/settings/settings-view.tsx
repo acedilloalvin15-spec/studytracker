@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ImagePlus, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,8 +15,9 @@ import { FormField } from '@/components/form-field'
 import { ConfirmDialog } from '@/components/app/confirm-dialog'
 import { PageHeader } from '@/components/app/shared'
 import { SelectField } from '@/components/app/select-field'
-import { initials, useCurrentUser } from '@/components/app/user-provider'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useCurrentUser } from '@/components/app/user-provider'
+import { AvatarEditor } from '@/components/settings/avatar-editor'
+import { InstallCard } from '@/components/pwa/install-card'
 import { createClient } from '@/lib/supabase/client'
 import { friendlyAuthError } from '@/lib/auth'
 import { clearOfflineData } from '@/lib/offline'
@@ -36,6 +37,7 @@ export function SettingsView() {
     <>
       <PageHeader title="Settings" description="Manage your profile, reminders, and account." />
       <div className="flex max-w-2xl flex-col gap-6">
+        <InstallCard />
         <ProfileCard />
         <ReminderCard />
         <AppearanceCard />
@@ -48,7 +50,6 @@ export function SettingsView() {
 
 function ProfileCard() {
   const { userId, email, profile, mutateProfile } = useCurrentUser()
-  const [avatarBusy, setAvatarBusy] = useState(false)
   const {
     register,
     handleSubmit,
@@ -58,27 +59,6 @@ function ProfileCard() {
     resolver: zodResolver(profileSchema),
     defaultValues: { full_name: profile.full_name ?? '', school: profile.school ?? '', year_level: profile.year_level ?? '' },
   })
-
-  async function uploadAvatar(file: File | undefined) {
-    if (!file) return
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('Choose a JPG, PNG, or WEBP image.'); return }
-    if (file.size > 3 * 1024 * 1024) { toast.error('Your profile picture must be 3 MB or smaller.'); return }
-    setAvatarBusy(true)
-    try {
-      const supabase = createClient()
-      const ext = file.type === 'image/jpeg' ? 'jpg' : file.type === 'image/png' ? 'png' : 'webp'
-      const objectPath = userId + '/avatar-' + Date.now() + '.' + ext
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(objectPath, file, { upsert: true, contentType: file.type, cacheControl: '3600' })
-      if (uploadError) throw uploadError
-      const { data } = supabase.storage.from('avatars').getPublicUrl(objectPath)
-      const avatar_url = data.publicUrl
-      const { error: profileError } = await supabase.from('profiles').upsert({ id: userId, avatar_url })
-      if (profileError) throw profileError
-      await mutateProfile({ ...profile, avatar_url }, { revalidate: false })
-      toast.success('Profile picture updated')
-    } catch { toast.error('Could not upload your picture. Check that the avatars storage bucket and policies are set up.') }
-    finally { setAvatarBusy(false) }
-  }
 
   async function onSubmit(values: ProfileValues) {
     const payload = {
@@ -104,22 +84,7 @@ function ProfileCard() {
         <CardDescription>This is how StudyTrack greets you.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-5 flex flex-wrap items-center gap-3">
-          <Avatar className="size-14">
-            {profile.avatar_url && <AvatarImage src={profile.avatar_url} alt="" />}
-            <AvatarFallback className="bg-primary/15 font-semibold text-primary">{initials(profile.full_name, email[0]?.toUpperCase())}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-medium">{profile.full_name ?? 'Student'}</p>
-            <p className="truncate text-sm text-muted-foreground">{email}</p>
-            <p className="text-xs text-muted-foreground">JPG, PNG, or WEBP · up to 3 MB</p>
-          </div>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted">
-            {avatarBusy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <ImagePlus className="size-4" aria-hidden="true" /> }
-            {avatarBusy ? 'Uploading…' : profile.avatar_url ? 'Change photo' : 'Add photo'}
-            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={avatarBusy} onChange={(e) => { void uploadAvatar(e.target.files?.[0]); e.currentTarget.value = '' }} />
-          </label>
-        </div>
+        <AvatarEditor />
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
           <FormField id="full_name" label="Full name" error={errors.full_name?.message}>
             <Input id="full_name" autoComplete="name" className="h-10" aria-invalid={!!errors.full_name} {...register('full_name')} />
