@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, FileText, RotateCcw, Trash2, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -20,9 +20,15 @@ import type { ReviewerContent } from '@/lib/types'
 
 export function ReviewerDetail({ id }: { id: string }) {
   const router = useRouter()
-  const { data: reviewer, isLoading } = useReviewer(id)
+  const { data: reviewer, isLoading, revalidate } = useReviewer(id)
   const subjects = useSubjectMap()
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // Just made on another device or a moment ago? Look again once.
+  useEffect(() => {
+    if (!isLoading && !reviewer) void revalidate()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, id])
 
   if (isLoading) {
     return (
@@ -38,7 +44,7 @@ export function ReviewerDetail({ id }: { id: string }) {
       <EmptyState
         icon={FileText}
         title="Reviewer not found"
-        description="It may have been deleted. Go back and make a new one."
+        description="It may have been deleted, or it is not saved on this phone yet. Go back and open it from the list."
         action={
           <Link href="/reviewers" className={buttonVariants()}>
             Back to Reviewer maker
@@ -68,7 +74,7 @@ export function ReviewerDetail({ id }: { id: string }) {
       </Link>
       <PageHeader
         title={reviewer.title}
-        description={`${reviewer.source_name ? `${reviewer.source_name} · ` : ''}${format(parseISO(reviewer.created_at), 'MMM d, yyyy')}`}
+        description={`${reviewer.source_name ? `${reviewer.source_name} · ` : ''}${format(parseISO(reviewer.created_at), 'MMM d, yyyy')}${c.engine === 'ashna' ? ' · Written with Ashna AI' : c.engine === 'rules' ? ' · Made with simple rules' : ''}`}
         actions={
           <>
             {reviewer.subject_id && <SubjectTag subject={subjects.get(reviewer.subject_id)} />}
@@ -112,12 +118,12 @@ export function ReviewerDetail({ id }: { id: string }) {
           )}
         </TabsContent>
 
-        <TabsContent value="cards" className="flex flex-col gap-4">
-          <Flashcards key={c.flashcards[0]?.question} cards={c.flashcards} />
+        <TabsContent value="cards">
+          <Flashcards cards={c.flashcards} />
         </TabsContent>
 
-        <TabsContent value="quiz" className="flex flex-col gap-4">
-          <Quiz key={c.quiz[0]?.question} items={c.quiz} />
+        <TabsContent value="quiz">
+          <Quiz items={c.quiz} />
         </TabsContent>
       </Tabs>
 
