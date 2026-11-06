@@ -22,10 +22,11 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2>The AI reviewer</h2>
+        <h2>The reviewer maker</h2>
         <p>
-          Reviewers are written by an AI and can contain mistakes. Always check important facts against your teacher&apos;s
-          materials before you rely on them for an exam.
+          Reviewers are created automatically, by Ashna AI or by simple rules, so they can contain mistakes or miss
+          important points. Always check important facts against your teacher&apos;s materials before you
+          rely on them for an exam.
         </p>
       </section>
 
@@ -33,7 +34,7 @@ export default function TermsPage() {
         <h2>No guarantees</h2>
         <p>
           StudyTrack is provided as is. We try to keep it working, but we cannot promise it will always be available or free
-          of errors, and the free AI service may have daily limits. Keep your own copy of anything important, such as the
+          of errors. Keep your own copy of anything important, such as the
           dates of deadlines and exams.
         </p>
       </section>
