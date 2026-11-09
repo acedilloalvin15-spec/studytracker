@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { assistantConfigured } from '@/lib/assistant/ai'
 import { AssistantView, type AssistantMessage } from '@/components/assistant/assistant-view'
 
 export const metadata: Metadata = { title: 'Study assistant' }
@@ -17,11 +16,5 @@ export default async function AssistantPage() {
     supabase.from('reviewers').select('id, title').order('created_at', { ascending: false }),
   ])
 
-  return (
-    <AssistantView
-      initialMessages={(messages ?? []) as AssistantMessage[]}
-      reviewers={reviewers ?? []}
-      aiReady={assistantConfigured()}
-    />
-  )
+  return <AssistantView initialMessages={(messages ?? []) as AssistantMessage[]} reviewers={reviewers ?? []} />
 }
