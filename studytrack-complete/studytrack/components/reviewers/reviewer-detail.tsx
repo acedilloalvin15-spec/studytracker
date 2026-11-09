@@ -74,7 +74,7 @@ export function ReviewerDetail({ id }: { id: string }) {
       </Link>
       <PageHeader
         title={reviewer.title}
-        description={`${reviewer.source_name ? `${reviewer.source_name} · ` : ''}${format(parseISO(reviewer.created_at), 'MMM d, yyyy')}${c.engine === 'ashna' ? ' · Written with Ashna AI' : c.engine === 'rules' ? ' · Made with simple rules' : ''}`}
+        description={`${reviewer.source_name ? `${reviewer.source_name} · ` : ''}${format(parseISO(reviewer.created_at), 'MMM d, yyyy')}${c.engine === 'rules' ? ' · Built from your notes (no AI)' : ''}`}
         actions={
           <>
             {reviewer.subject_id && <SubjectTag subject={subjects.get(reviewer.subject_id)} />}

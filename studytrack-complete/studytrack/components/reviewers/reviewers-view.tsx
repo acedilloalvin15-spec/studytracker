@@ -61,7 +61,7 @@ function ReviewersHome() {
     setFile(f)
   }
 
-  type Made = GeneratedReviewer & { source_name: string; engine?: 'ashna' | 'rules'; ai_error?: string }
+  type Made = GeneratedReviewer & { source_name: string; engine?: 'rules' }
 
   // Reads the material on the phone with the simple rules (works without internet).
   async function buildOnDevice(questionCount: number): Promise<Made> {
@@ -138,13 +138,7 @@ function ReviewersHome() {
       const withDate: Reviewer = { ...row, created_at: new Date().toISOString() }
       await mutate('reviewers', (current?: Reviewer[]) => [withDate, ...(current ?? [])], { revalidate: navigator.onLine })
       if (!navigator.onLine) toast.success('Your reviewer is ready and saved on this phone.')
-      else if (made.engine === 'ashna') toast.success('Your reviewer is ready! Written with Ashna AI.')
-      else {
-        toast.success('Your reviewer is ready!')
-        if (made.ai_error && made.ai_error !== 'not_configured') {
-          toast.message('Ashna AI was not available just now, so simple rules were used.')
-        }
-      }
+      else toast.success('Your reviewer is ready!')
       router.push(`/reviewers?id=${row.id}`)
     } catch (err) {
       if (err instanceof ReviewerError) {
@@ -185,8 +179,8 @@ function ReviewersHome() {
         <CardHeader>
           <CardTitle>Make a new reviewer</CardTitle>
           <CardDescription>
-            Online, Ashna AI writes your reviewer. Offline, or if Ashna AI is busy, simple rules find the headings, definitions,
-            and key sentences instead.
+            No AI needed. Simple rules find the headings, definitions, names, dates, and key sentences in your material and
+            build the summary, key terms, flashcards, and quiz from them. It works offline for pasted text and .txt files.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -287,9 +281,8 @@ function ReviewersHome() {
           </div>
 
           <p className="text-xs text-muted-foreground text-pretty">
-            When you are online, the text of your material is sent to Ashna AI to write the reviewer, so please don&apos;t use private
-            documents. Offline, pasted text and .txt files are read on your phone with simple rules. PDF and Word files always need
-            internet, and we don&apos;t keep the file. Pictures and scanned pages can&apos;t be read.
+            No AI service reads your material. Offline, pasted text and .txt files are read on your phone. PDF and Word files are
+            read by our server and need internet, and we don&apos;t keep the file. Pictures and scanned pages can&apos;t be read.
           </p>
 
           <Button size="lg" className="self-start" onClick={generate} disabled={busy || !ready}>
