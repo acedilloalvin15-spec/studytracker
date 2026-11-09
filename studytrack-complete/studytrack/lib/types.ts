@@ -61,7 +61,7 @@ export type ReviewSession = {
 }
 
 export type ReviewerContent = {
-  engine?: 'ashna' | 'rules'
+  engine?: 'rules' | 'ashna' // 'ashna' only appears on older reviewers saved before the AI was removed
   summary: string
   key_terms: { term: string; definition: string }[]
   flashcards: { question: string; answer: string }[]
