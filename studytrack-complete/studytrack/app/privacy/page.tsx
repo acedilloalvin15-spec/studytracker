@@ -43,11 +43,10 @@ export default function PrivacyPage() {
           small picture so it can be shown on your profile.
         </p>
         <p>
-          The study assistant is a chat feature. When you send it a message, your message, a few recent messages from your
-          chat, and (only if you choose one) the summary, terms, flashcards and quiz of one reviewer are sent to Anthropic, an
-          AI service, which writes the reply. We save your chat so you can see it later, and you can clear it at any time.
-          Please do not type passwords or sensitive personal details into the assistant. You can give a reply a thumbs up or
-          thumbs down; we keep that rating to improve the help we give.
+          The study assistant is a chat feature that works on our own server, without any outside AI service. Your messages and
+          its replies are saved so you can see your chat later, and you can clear it at any time. Please do not type passwords or
+          sensitive personal details into the assistant. You can give a reply a thumbs up or thumbs down; we keep that rating to
+          improve the help we give.
         </p>
       </section>
 
@@ -55,7 +54,6 @@ export default function PrivacyPage() {
         <h2>Services that help us run StudyTrack</h2>
         <ul>
           <li>Supabase stores accounts, your study data, profile pictures, and your assistant chats.</li>
-          <li>Anthropic writes the study assistant's replies. It receives only the messages described above when you use the assistant.</li>
           <li>Vercel hosts the website.</li>
           <li>Google provides Google sign-in, if you choose it.</li>
         </ul>
