@@ -37,9 +37,8 @@ export default function PrivacyPage() {
       <section>
         <h2>Files, text, and pictures</h2>
         <p>
-          When you are online, the text of the material you give the reviewer maker is sent to our server and then to Ashna
-          AI, a third-party AI service, which helps write your reviewer. If Ashna AI is not available, or you are offline,
-          simple rules on your device or our server are used instead. We do not keep the original file. We keep the reviewer
+          The text of the material you give the reviewer maker is read with simple rules, on your device when you are
+          offline or on our server when you are online. It is not sent to any AI service. We do not keep the original file. We keep the reviewer
           that is created. Please do not upload private or sensitive documents. If you add a profile picture, we store that
           small picture so it can be shown on your profile.
         </p>
@@ -51,7 +50,6 @@ export default function PrivacyPage() {
           <li>Supabase stores accounts, your study data, and profile pictures.</li>
           <li>Vercel hosts the website.</li>
           <li>Google provides Google sign-in, if you choose it.</li>
-          <li>Ashna AI helps write reviewers. The text of your material is sent to it when you are online.</li>
         </ul>
       </section>
 
