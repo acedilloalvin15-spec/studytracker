@@ -1,20 +1,14 @@
 import { NextResponse } from "next/server";
-import { callGeminiJson } from "@/lib/regenerate/gemini";
+import { regenerateSection, ReviewerError, type Style } from "@/lib/reviewer-generator";
+import { verifyContent } from "@/lib/reviewer-verify";
 import {
   getCurrentUserId,
   getReviewer,
   saveReviewerSection,
 } from "@/lib/regenerate/data";
 
-// Gemini can take a while; avoid Vercel's short default timeout.
-export const maxDuration = 60;
-
-const STYLES: Record<string, string> = {
-  fresh: "a fresh angle, mixed difficulty",
-  easier: "easier, focused on definitions and basics",
-  harder: "harder, focused on application and scenario-based thinking",
-};
-
+// New flashcards / quiz questions are built from the reviewer itself with simple rules (no AI, no internet),
+// so every answer still comes from the student's own material.
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -31,6 +25,7 @@ export async function POST(
     if (kind !== "flashcards" && kind !== "quiz") {
       return NextResponse.json({ error: "Invalid kind" }, { status: 400 });
     }
+    const styleKey: Style = style === "easier" || style === "harder" ? style : "fresh";
 
     const reviewer = await getReviewer(id, userId);
     if (!reviewer) {
@@ -38,58 +33,45 @@ export async function POST(
     }
 
     const previous = reviewer[kind as "flashcards" | "quiz"];
-    const count = previous.length || 10;
-    const styleText = STYLES[style as string] ?? STYLES.fresh;
+    const count = Math.min(15, previous.length || 10);
+    const content = {
+      summary: reviewer.summary,
+      key_terms: reviewer.keyTerms,
+      flashcards: reviewer.flashcards,
+      quiz: reviewer.quiz,
+    };
 
-    const shape =
-      kind === "quiz"
-        ? `[{"question": "...", "options": ["...","...","...","..."], "answer_index": 0, "explanation": "..."}]`
-        : `[{"question": "...", "answer": "..."}]`;
-
-    const prompt = `You are creating study material from the reviewer below.
-
-SUMMARY:
-${reviewer.summary}
-
-KEY TERMS:
-${JSON.stringify(reviewer.keyTerms)}
-
-Create exactly ${count} NEW ${
-      kind === "quiz"
-        ? "multiple-choice quiz questions (exactly 4 options each; answer_index is the 0-based index of the correct option)"
-        : "flashcards"
-    }.
-Style: ${styleText}.
-Use only facts supported by the summary and key terms.
-Do NOT reuse or closely paraphrase any of these existing items:
-${JSON.stringify(previous)}
-
-Return ONLY valid JSON in exactly this shape (an array):
-${shape}`;
-
-    const items = await callGeminiJson(prompt);
-
-    if (!Array.isArray(items) || items.length === 0) {
-      throw new Error("Gemini did not return a non-empty array");
+    let items: any[];
+    try {
+      items = regenerateSection(content, kind, { count, style: styleKey }) as any[];
+    } catch (err) {
+      if (err instanceof ReviewerError) {
+        return NextResponse.json(
+          { error: "There is not enough material in this reviewer to make a new set." },
+          { status: 422 }
+        );
+      }
+      throw err;
     }
 
-    // Reject badly shaped results so we never save a broken set.
-    if (kind === "quiz") {
-      const ok = items.every(
-        (q: any) =>
-          typeof q.question === "string" &&
-          Array.isArray(q.options) &&
-          q.options.length === 4 &&
-          Number.isInteger(q.answer_index) &&
-          q.answer_index >= 0 &&
-          q.answer_index <= 3
+    // Accuracy check against what this reviewer says. Anything unsupported is dropped.
+    const material = [
+      reviewer.summary,
+      reviewer.keyTerms.map((t: any) => `${t.term}: ${t.definition}`).join("\n"),
+      ...reviewer.quiz.map((q: any) => q.explanation ?? ""),
+      ...reviewer.flashcards.map((c: any) => c.answer ?? ""),
+    ].join("\n\n");
+    const checked = verifyContent(
+      { summary: "", key_terms: [], flashcards: kind === "flashcards" ? items : [], quiz: kind === "quiz" ? items : [] },
+      material
+    ).content;
+    items = kind === "quiz" ? checked.quiz : checked.flashcards;
+
+    if (items.length < 3) {
+      return NextResponse.json(
+        { error: "There is not enough material in this reviewer to make a new set." },
+        { status: 422 }
       );
-      if (!ok) throw new Error("Gemini returned a badly shaped quiz");
-    } else {
-      const ok = items.every(
-        (c: any) => typeof c.question === "string" && typeof c.answer === "string"
-      );
-      if (!ok) throw new Error("Gemini returned badly shaped flashcards");
     }
 
     // Save only after a valid result, so a failure never wipes the old set.
