@@ -17,6 +17,7 @@ Built with Next.js, Tailwind CSS, shadcn/ui, and Supabase (login + database).
 | `/review` | Exams and the automatic day-by-day review plan |
 | `/reviewers` | Upload a PDF, Word, or text file (or paste text) and get a summary, key terms, flashcards, and a practice quiz. Built with simple rules, no AI needed |
 | `/calendar` | Monthly view of deadlines, exams, and classes |
+| `/assistant` | Study assistant chat: asks about the app, guides students, and quizzes them on a reviewer |
 | `/settings` | Profile, reminders, theme, change password, delete account |
 
 ## Set up on your computer (step by step)
@@ -56,6 +57,20 @@ Add `SUPABASE_SERVICE_ROLE_KEY` (from Supabase **Project Settings > API**) to yo
 
 - Reminders appear in the notification bell inside the app. The "Email reminders" switch only saves your choice; sending emails would need a scheduled job, which is not included.
 - All data is protected with Row Level Security, so each student only sees their own rows.
+
+## Study assistant setup (AI chat)
+
+1. In Supabase **SQL Editor**, run `supabase/assistant.sql` once (new installs already get it from `schema.sql`).
+2. Create an API key at console.anthropic.com.
+3. In Vercel, add `ANTHROPIC_API_KEY` under **Settings > Environment Variables**. Do not add `NEXT_PUBLIC_` in front of it, so the key stays private. Never put the key on GitHub.
+4. Optional: add `ASSISTANT_MODEL` (default `claude-haiku-5-5`) and `ASSISTANT_DAILY_LIMIT` (default `30` questions per student per day).
+5. Redeploy from the **Deployments** tab.
+
+How it works:
+- The server answers from the help articles in `lib/assistant/knowledge.ts`. Edit or add articles there to improve answers about the app.
+- If a student picks a reviewer, only that reviewer's text is sent with the question.
+- Students can rate each answer with thumbs up or down. Ratings are saved in `assistant_messages.feedback`, so you can see which answers need better help articles.
+- Students can clear their own chat. The assistant does not retrain on student data.
 
 ## Reviewer maker (no AI)
 
