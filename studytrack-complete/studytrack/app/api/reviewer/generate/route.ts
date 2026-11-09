@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { AshnaError, ashnaConfigured, callAshna, type AshnaResult } from '@/lib/ashna'
 import { extractTextFromFile } from '@/lib/reviewer-extract'
-import { generateReviewer, ReviewerError, type GeneratedReviewer } from '@/lib/reviewer-generator'
-import type { ReviewerContent } from '@/lib/types'
+import { generateReviewer, ReviewerError } from '@/lib/reviewer-generator'
+import { verifyContent } from '@/lib/reviewer-verify'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -12,25 +11,13 @@ export const maxDuration = 60
 const MAX_BYTES = 4 * 1024 * 1024
 const QUESTION_COUNTS = [5, 10, 15]
 const MIN_CHARS = 150
-// Protects the AI quota: after this many reviewers in an hour, the simple rules are used instead.
-const AI_PER_HOUR = 10
 
 function fail(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status })
 }
 
-function mergeContent(ai: AshnaResult, rules: GeneratedReviewer | null): ReviewerContent {
-  return {
-    engine: 'ashna',
-    summary: ai.summary ?? rules?.content.summary ?? '',
-    key_terms: ai.key_terms.length ? ai.key_terms : (rules?.content.key_terms ?? []),
-    flashcards: ai.flashcards.length >= 3 ? ai.flashcards : (rules?.content.flashcards ?? ai.flashcards),
-    quiz: ai.quiz.length >= 3 ? ai.quiz : (rules?.content.quiz ?? ai.quiz),
-  }
-}
-
-// Makes a reviewer from a PDF/Word/text file or pasted text. Ashna AI writes it when it is available;
-// otherwise (or if it fails) simple rules do. The original file is never stored.
+// Makes a reviewer from a PDF/Word/text file or pasted text using simple rules only (no AI).
+// The original file is never stored.
 export async function POST(request: Request) {
   const supabase = await createClient()
   const {
@@ -82,43 +69,20 @@ export async function POST(request: Request) {
     return fail('There is too little text to make a reviewer. Try a longer lesson or notes.', 422)
   }
 
-  // The simple-rules reviewer is always prepared: it is the backup and fills any gaps.
-  let rules: GeneratedReviewer | null = null
+  let made
   try {
-    rules = generateReviewer(text, { questionCount, fallbackTitle })
+    made = generateReviewer(text, { questionCount, fallbackTitle })
   } catch (err) {
-    if (!(err instanceof ReviewerError)) return fail('Something went wrong while making the reviewer. Please try again.', 500)
+    if (err instanceof ReviewerError) return fail('There is too little text to make a reviewer. Try a longer lesson or notes.', 422)
+    return fail('Something went wrong while making the reviewer. Please try again.', 500)
   }
 
-  let ai: AshnaResult | null = null
-  let aiError: string | undefined
-  if (ashnaConfigured()) {
-    const since = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    const { count: recent } = await supabase.from('reviewers').select('id', { count: 'exact', head: true }).gte('created_at', since)
-    if ((recent ?? 0) >= AI_PER_HOUR) {
-      aiError = 'hourly_limit'
-    } else {
-      try {
-        ai = await callAshna(text, questionCount)
-      } catch (err) {
-        aiError = err instanceof AshnaError ? err.code : 'unknown'
-        console.error('Ashna AI was not used:', aiError)
-      }
-    }
-  } else {
-    aiError = 'not_configured'
-  }
-
-  if (ai) {
-    const title = ai.title || rules?.title || fallbackTitle
-    return NextResponse.json({ title, content: mergeContent(ai, rules), source_name: sourceName, engine: 'ashna' })
-  }
-  if (!rules) return fail('There is too little text to make a reviewer. Try a longer lesson or notes.', 422)
+  // Final accuracy check: every answer must be found in the student's own text. Anything else is dropped.
+  const checked = verifyContent(made.content, text).content
   return NextResponse.json({
-    title: rules.title,
-    content: { ...rules.content, engine: 'rules' },
+    title: made.title,
+    content: { ...checked, summary: checked.summary || made.content.summary, engine: 'rules' },
     source_name: sourceName,
     engine: 'rules',
-    ai_error: aiError,
   })
 }
