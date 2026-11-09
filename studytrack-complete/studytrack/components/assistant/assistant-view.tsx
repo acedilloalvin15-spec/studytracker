@@ -22,17 +22,15 @@ const STARTERS = [
   'How do I add an exam?',
   'How does the reviewer maker work?',
   'Quiz me on my reviewer',
-  'Give me a study tip for tomorrow',
+  'Give me study tips',
 ]
 
 export function AssistantView({
   initialMessages,
   reviewers,
-  aiReady,
 }: {
   initialMessages: AssistantMessage[]
   reviewers: ReviewerOption[]
-  aiReady: boolean
 }) {
   const [messages, setMessages] = useState<AssistantMessage[]>(initialMessages)
   const [input, setInput] = useState('')
@@ -107,13 +105,13 @@ export function AssistantView({
     }
   }
 
-  const disabled = !aiReady || sending
+  const disabled = sending
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Study assistant"
-        description="Ask how to use StudyTrack, get study help, or quiz yourself on a reviewer."
+        description="Ask how to use StudyTrack, get study tips, or quiz yourself on a reviewer."
         actions={
           messages.length > 0 ? (
             <Button variant="outline" size="sm" onClick={clearChat}>
@@ -124,13 +122,6 @@ export function AssistantView({
         }
       />
 
-      {!aiReady && (
-        <Card>
-          <CardContent className="p-4 text-sm text-muted-foreground">
-            The study assistant is not set up yet. The site owner needs to add the AI key on the server.
-          </CardContent>
-        </Card>
-      )}
 
       <Card className="flex min-h-[60vh] flex-col">
         <CardContent className="flex flex-1 flex-col gap-4 p-4">
@@ -245,7 +236,7 @@ export function AssistantView({
           </Button>
         </form>
         <p className="text-xs text-muted-foreground">
-          The assistant can make mistakes. Check important answers with your notes or teacher.
+          Answers come from StudyTrack's help and your reviewer. Check important details with your notes or teacher.
         </p>
       </div>
     </div>
