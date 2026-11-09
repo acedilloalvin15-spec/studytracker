@@ -15,7 +15,7 @@ Built with Next.js, Tailwind CSS, shadcn/ui, and Supabase (login + database).
 | `/subjects` | Your subjects and their colors |
 | `/schedule` | Weekly class timetable |
 | `/review` | Exams and the automatic day-by-day review plan |
-| `/reviewers` | Upload a PDF, Word, or text file (or paste text) and get a summary, key terms, flashcards, and a practice quiz. Written by Ashna AI online, with a simple-rules backup |
+| `/reviewers` | Upload a PDF, Word, or text file (or paste text) and get a summary, key terms, flashcards, and a practice quiz. Built with simple rules, no AI needed |
 | `/calendar` | Monthly view of deadlines, exams, and classes |
 | `/settings` | Profile, reminders, theme, change password, delete account |
 
@@ -57,17 +57,14 @@ Add `SUPABASE_SERVICE_ROLE_KEY` (from Supabase **Project Settings > API**) to yo
 - Reminders appear in the notification bell inside the app. The "Email reminders" switch only saves your choice; sending emails would need a scheduled job, which is not included.
 - All data is protected with Row Level Security, so each student only sees their own rows.
 
-## Reviewer maker setup (Ashna AI)
+## Reviewer maker (no AI)
 
-1. In Supabase **SQL Editor**, run `supabase/reviewers.sql` once (new installs already get it from `schema.sql`). Run `supabase/avatars.sql` too if you want profile pictures.
-2. Create an API key in your Ashna AI account.
-3. In Vercel, open **Settings > Environment Variables** and add `ASHNA_API_KEY` with your key. Type the name exactly, with no `NEXT_PUBLIC_` in front, so the key stays private on the server. Never put the key on GitHub.
-4. Optional: add `ASHNA_MODEL` to use another model (the default is `claude-sonnet-5`; `gpt-4o-mini` is another model id Ashna lists) and `ASHNA_BASE_URL` (the default is `https://api.ashna.ai/v1/api`).
-5. Redeploy from the **Deployments** tab.
+The reviewer maker runs **without any AI and needs no API key or setup**. It reads headings, glossary lines, definitions, names, dates and numbers in the student's text and builds the summary, key terms, flashcards and quiz from them, so every answer is copied from the student's own notes. The "New quiz" and "New flashcards" buttons work the same way.
 
-How it works:
-- Online, the text of the student's file or pasted notes is sent from our server to Ashna AI, which writes the summary, key terms, flashcards, and quiz. Each student can use the AI for 10 reviewers per hour; after that, simple rules are used.
-- If Ashna AI is busy, out of quota, or gives an unusable answer, simple rules (headings, definitions, key sentences) make the reviewer instead. Offline, pasted text and `.txt` files use the same simple rules on the phone.
+**Accuracy check** (`lib/reviewer-verify.ts`): before a reviewer is saved, every answer is compared with the student's text. Unsupported answers, duplicate or ambiguous quiz questions, and questions that give away their own answer are dropped.
+
+- The text is processed on our own server (or on the phone when offline) and is not sent to any AI service. Each reviewer keeps only the generated content, never the original file.
+- Offline, pasted text and `.txt` files use the same rules on the phone.
 - PDF and Word files are read by the server (no file is kept) and need internet. Files must be under 4 MB (a Vercel limit). Scanned pages and pictures can't be read.
 
 ## Using StudyTrack on an Android phone
