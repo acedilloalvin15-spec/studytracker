@@ -6,6 +6,7 @@ import {
   GraduationCap,
   LayoutDashboard,
   ListChecks,
+  MessageSquare,
   Settings,
 } from 'lucide-react'
 
@@ -17,6 +18,7 @@ export const NAV_ITEMS = [
   { href: '/review', label: 'Review', icon: GraduationCap },
   { href: '/reviewers', label: 'Reviewer', icon: FileText },
   { href: '/calendar', label: 'Calendar', icon: CalendarDays },
+  { href: '/assistant', label: 'Assistant', icon: MessageSquare },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
