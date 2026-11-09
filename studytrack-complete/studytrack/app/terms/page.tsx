@@ -24,7 +24,7 @@ export default function TermsPage() {
       <section>
         <h2>The reviewer maker</h2>
         <p>
-          Reviewers are created automatically, by Ashna AI or by simple rules, so they can contain mistakes or miss
+          Reviewers are created automatically by simple rules (no AI), so they can contain mistakes or miss
           important points. Always check important facts against your teacher&apos;s materials before you
           rely on them for an exam.
         </p>
