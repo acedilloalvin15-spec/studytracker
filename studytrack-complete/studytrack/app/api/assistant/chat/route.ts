@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     if (data) reviewer = { title: data.title as string, content: data.content as ReviewerContent }
   }
 
-  const reply = answerQuestion(message, reviewer)
+  const reply = await answerQuestion(message, reviewer)
 
   const { data: saved, error } = await supabase
     .from('assistant_messages')
