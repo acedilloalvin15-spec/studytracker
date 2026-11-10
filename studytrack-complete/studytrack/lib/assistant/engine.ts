@@ -144,7 +144,7 @@ export async function answerQuestion(message: string, reviewer: ReviewerInput | 
 
   if (GREETING.test(text)) {
     return (
-      'Hi! I can explain school topics, help you use StudyTrack, give study tips, or quiz you on a reviewer. ' +
+      'Hi, I\'m Study Buddie! I can explain school topics, help you use StudyTrack, give study tips, or quiz you on a reviewer. ' +
       'What would you like to do?'
     )
   }
