@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Floating assistant button, like the one in Messenger. Phones only. */}
       <Link
         href="/assistant"
-        aria-label="Study assistant"
+        aria-label="Study Buddie"
         className="fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] z-40 flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 via-fuchsia-500 to-blue-500 text-white shadow-[0_8px_24px_rgb(124_58_237/0.45)] transition-transform hover:scale-105 active:scale-95 md:hidden"
       >
         <Sparkles className="size-6" aria-hidden="true" />
