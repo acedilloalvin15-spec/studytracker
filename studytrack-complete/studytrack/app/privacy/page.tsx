@@ -43,7 +43,7 @@ export default function PrivacyPage() {
           small picture so it can be shown on your profile.
         </p>
         <p>
-          The study assistant is a chat feature that answers on our own server. For general questions, it sends a few key words from your question to Wikipedia, a free public encyclopedia, to find a summary. It does not send your full chat or your reviewers to Wikipedia. Your messages and
+          Study Buddie, the study assistant, is a chat feature that answers on our own server. For general questions, it sends a few key words from your question to Wikipedia, a free public encyclopedia, to find a summary. It does not send your full chat or your reviewers to Wikipedia. Your messages and
           its replies are saved so you can see your chat later, and you can clear it at any time. Please do not type passwords or
           sensitive personal details into the assistant. You can give a reply a thumbs up or thumbs down; we keep that rating to
           improve the help we give.
