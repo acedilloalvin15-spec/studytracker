@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { AssistantView, type AssistantMessage } from '@/components/assistant/assistant-view'
 
-export const metadata: Metadata = { title: 'Study assistant' }
+export const metadata: Metadata = { title: 'Study Buddie' }
 
 export default async function AssistantPage() {
   const supabase = await createClient()
