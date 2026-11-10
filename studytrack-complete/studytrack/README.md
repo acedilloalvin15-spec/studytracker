@@ -67,7 +67,9 @@ How it works:
 - If a student picks a reviewer, it can give a summary, a random quiz question, flashcards, definitions of key terms, or the reviewer sentences that best match the question.
 - It gives short study tips and a friendly fallback when it does not know an answer.
 - Students can rate answers with thumbs up or down (saved in `assistant_messages.feedback`) and clear their own chat.
-- Its answers come from rules and matching, not from an AI model, so it cannot answer general questions outside the app and its reviewers.
+- For general questions it asks Wikipedia's free public search and summary service (no API key) and shows the summary with a source link. Only a few key words from the question are sent.
+- It refuses questions about its own system or about hacking.
+- It is rule-based, not an AI model, so it cannot reason through problems the way a full AI assistant can.
 
 ## Reviewer maker (no AI)
 
