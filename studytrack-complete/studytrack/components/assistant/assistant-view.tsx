@@ -136,7 +136,7 @@ export function AssistantView({
           <ArrowLeft className="size-5" />
         </Link>
         <div className="flex items-center gap-1.5 font-semibold">
-          Study Assistant
+          Study Buddie
           <span className="flex size-5 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white" aria-hidden="true">✓</span>
         </div>
         <button
