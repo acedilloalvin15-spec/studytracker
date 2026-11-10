@@ -19,6 +19,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const mobileItems = NAV_ITEMS.filter((i) => MOBILE_NAV.includes(i.href))
   const activeIndex = mobileItems.findIndex((i) => isActive(pathname, i.href))
 
+  // The assistant has its own full-screen chat page, like Messenger's Meta AI.
+  if (pathname === '/assistant' || pathname.startsWith('/assistant/')) {
+    return <>{children}</>
+  }
+
   return (
     <div className="flex min-h-dvh bg-muted/40">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r bg-sidebar px-3 py-4 md:flex">
