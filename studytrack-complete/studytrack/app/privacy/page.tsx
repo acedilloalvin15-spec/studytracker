@@ -10,7 +10,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" updated="October 26, 2026">
       <p>
-        StudyTrack is a free study planner for students. This page explains what information the website collects, why, and
+        Study Pulse is a free study planner for students. This page explains what information the website collects, why, and
         what you can do about it.
       </p>
 
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2>Services that help us run StudyTrack</h2>
+        <h2>Services that help us run Study Pulse</h2>
         <ul>
           <li>Supabase stores accounts, your study data, profile pictures, and your assistant chats.</li>
           <li>Vercel hosts the website.</li>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Children</h2>
         <p>
-          StudyTrack is meant for students. If you are young, please ask a parent or teacher before you sign up.
+          Study Pulse is meant for students. If you are young, please ask a parent or teacher before you sign up.
         </p>
       </section>
 
