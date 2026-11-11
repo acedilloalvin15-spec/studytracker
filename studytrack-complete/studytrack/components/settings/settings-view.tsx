@@ -81,7 +81,7 @@ function ProfileCard() {
     <Card className="rounded-2xl">
       <CardHeader>
         <CardTitle>Profile</CardTitle>
-        <CardDescription>This is how StudyTrack greets you.</CardDescription>
+        <CardDescription>This is how Study Pulse greets you.</CardDescription>
       </CardHeader>
       <CardContent>
         <AvatarEditor />
@@ -256,7 +256,7 @@ function DangerCard() {
         open={open}
         onOpenChange={setOpen}
         title="Delete your account?"
-        description="Everything you saved in StudyTrack will be permanently deleted."
+        description="Everything you saved in Study Pulse will be permanently deleted."
         confirmLabel="Yes, delete everything"
         onConfirm={() => deleteAccount().catch(() => undefined)}
       />
