@@ -1,4 +1,4 @@
--- StudyTrack: profile pictures (run this once in Supabase > SQL Editor)
+-- Study Pulse: profile pictures (run this once in Supabase > SQL Editor)
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('avatars', 'avatars', true, 1048576, array['image/jpeg', 'image/png', 'image/webp'])

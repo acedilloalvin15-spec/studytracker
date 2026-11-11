@@ -1,4 +1,4 @@
--- StudyTrack database schema
+-- Study Pulse database schema
 -- Run this whole file once in Supabase: SQL Editor > New query > paste > Run.
 
 create extension if not exists "pgcrypto";

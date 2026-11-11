@@ -1,4 +1,4 @@
--- StudyTrack: AI study assistant tables (run once in Supabase > SQL Editor)
+-- Study Pulse: AI study assistant tables (run once in Supabase > SQL Editor)
 -- Also included in schema.sql for new installs.
 
 create table if not exists public.assistant_messages (
