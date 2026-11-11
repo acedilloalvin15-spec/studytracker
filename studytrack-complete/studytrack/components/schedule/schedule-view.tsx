@@ -116,7 +116,7 @@ export function ScheduleView() {
             <EmptyState
               icon={CalendarRange}
               title="Your timetable is empty"
-              description="Add each class with its day and time, and StudyTrack will show what is next every day."
+              description="Add each class with its day and time, and Study Pulse will show what is next every day."
               action={
                 <Button onClick={() => openNew()}>
                   <Plus aria-hidden="true" /> Add your first class
