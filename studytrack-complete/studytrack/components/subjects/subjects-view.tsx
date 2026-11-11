@@ -47,7 +47,7 @@ export function SubjectsView() {
     <>
       <PageHeader
         title="Subjects"
-        description="Your classes and their colors. Colors show up everywhere in StudyTrack."
+        description="Your classes and their colors. Colors show up everywhere in Study Pulse."
         actions={
           <Button size="lg" onClick={openNew}>
             <Plus aria-hidden="true" /> Add subject
