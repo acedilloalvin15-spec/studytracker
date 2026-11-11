@@ -1,6 +1,7 @@
 // Free, key-less assistant. Answers come from:
 // 1) safety rules, 2) the reviewer the student chose, 3) Study Pulse help articles,
-// 4) Wikipedia's public search and summary service (free, no API key).
+// 4) free, keyless web lookups: DuckDuckGo's Instant Answer API first, then
+//    Wikipedia's public search and summary service, for whatever DuckDuckGo misses.
 import { findHelpArticles, type HelpArticle } from '@/lib/assistant/knowledge'
 import type { ReviewerContent } from '@/lib/types'
 
@@ -104,6 +105,54 @@ function reviewerAnswer(message: string, { title, content }: ReviewerInput): str
   return `From your reviewer "${title}":\n\n- ${unique.slice(0, 3).join('\n- ')}`
 }
 
+/** Asks DuckDuckGo's free Instant Answer API (no key needed) for a direct answer. */
+async function duckDuckGoAnswer(message: string): Promise<string | null> {
+  const query = message.trim().slice(0, 200)
+  if (!query) return null
+  try {
+    const res = await fetch(
+      `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1&no_redirect=1`,
+      { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(6000) },
+    )
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      Answer?: string
+      AbstractText?: string
+      AbstractURL?: string
+      Definition?: string
+      DefinitionURL?: string
+      RelatedTopics?: { Text?: string; FirstURL?: string }[]
+    }
+
+    if (data.Answer) return data.Answer
+
+    if (data.AbstractText) {
+      const short = data.AbstractText.split(/(?<=[.!?])\s+/).slice(0, 3).join(' ').slice(0, 600)
+      return `${short}${data.AbstractURL ? `\n\nSource: ${data.AbstractURL}` : ''}`
+    }
+
+    if (data.Definition) {
+      return `${data.Definition}${data.DefinitionURL ? `\n\nSource: ${data.DefinitionURL}` : ''}`
+    }
+
+    const related = data.RelatedTopics?.find((t) => t.Text && t.Text.length > 20)
+    if (related?.Text) {
+      return `${related.Text}${related.FirstURL ? `\n\nSource: ${related.FirstURL}` : ''}`
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+/** Tries DuckDuckGo first, then falls back to Wikipedia's summary service. Both are free and keyless. */
+async function webAnswer(message: string): Promise<string | null> {
+  const ddg = await duckDuckGoAnswer(message)
+  if (ddg) return ddg
+  return wikipediaAnswer(message)
+}
+
 /** Asks Wikipedia (free, no key) for a short summary of the best matching article. */
 async function wikipediaAnswer(message: string): Promise<string | null> {
   const query = words(message).slice(0, 5).join(' ')
@@ -148,7 +197,7 @@ export async function answerQuestion(message: string, reviewer: ReviewerInput | 
   if (SYSTEM_OR_HACK.test(text)) return SAFE_REFUSAL
 
   if (GREETING.test(text)) {
-    return 'Hi, I\'m Study Buddie! I can explain school topics, help you use Study Pulse, give study tips, or quiz you on a reviewer. What would you like to do?'
+    return 'Hi, I\'m Study Buddie! I can explain school topics, look things up on the web, help you use Study Pulse, give study tips, or quiz you on a reviewer. What would you like to do?'
   }
 
   if (/\b(tip|tips|how to study|study better|study habits|advice)\b/i.test(text)) {
@@ -172,8 +221,10 @@ export async function answerQuestion(message: string, reviewer: ReviewerInput | 
   // Don't let a broad, accidental keyword match masquerade as an answer to an unrelated app question.
   if (articles.length && appFirst) return appAnswer(articles) ?? 'I could not find a matching Study Pulse help article. Please try asking about a specific page or feature.'
 
+  // Anything that isn't an app question, or that clearly looks like a knowledge question,
+  // gets a real web lookup rather than being refused.
   if (GENERAL_QUESTION.test(text) || !appFirst) {
-    const general = await wikipediaAnswer(text)
+    const general = await webAnswer(text)
     if (general) return general
   }
 
