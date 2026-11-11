@@ -8,7 +8,7 @@ export function Logo({ href = '/', className }: { href?: string; className?: str
       <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <BookOpenCheck className="size-4.5" aria-hidden="true" />
       </span>
-      <span className="text-lg">StudyTrack</span>
+      <span className="text-lg">Study Pulse</span>
     </Link>
   )
 }
