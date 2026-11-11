@@ -42,7 +42,7 @@ export function LoginForm() {
     <AuthSplitCard
       footer={
         <p>
-          New to StudyTrack?{' '}
+          New to Study Pulse?{' '}
           <Link href="/signup" className="font-medium text-primary hover:underline">
             Create a free account
           </Link>
