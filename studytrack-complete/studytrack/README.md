@@ -1,4 +1,4 @@
-# StudyTrack
+# Study Pulse
 
 A free study planner for students: deadlines, weekly class schedule, exam review planner, calendar, and reminders.
 
@@ -63,7 +63,7 @@ Add `SUPABASE_SERVICE_ROLE_KEY` (from Supabase **Project Settings > API**) to yo
 The assistant needs no setup beyond the `supabase/assistant.sql` file (run once in Supabase; new installs already get it from `schema.sql`). It does not call any AI service, so it costs nothing to run.
 
 How it works:
-- It answers StudyTrack questions from the help articles in `lib/assistant/knowledge.ts`. Edit or add articles there.
+- It answers Study Pulse questions from the help articles in `lib/assistant/knowledge.ts`. Edit or add articles there.
 - If a student picks a reviewer, it can give a summary, a random quiz question, flashcards, definitions of key terms, or the reviewer sentences that best match the question.
 - It gives short study tips and a friendly fallback when it does not know an answer.
 - Students can rate answers with thumbs up or down (saved in `assistant_messages.feedback`) and clear their own chat.
@@ -81,20 +81,20 @@ The reviewer maker runs **without any AI and needs no API key or setup**. It rea
 - Offline, pasted text and `.txt` files use the same rules on the phone.
 - PDF and Word files are read by the server (no file is kept) and need internet. Files must be under 4 MB (a Vercel limit). Scanned pages and pictures can't be read.
 
-## Using StudyTrack on an Android phone
+## Using Study Pulse on an Android phone
 
-StudyTrack works in any phone browser, and it can be installed like an app:
+Study Pulse works in any phone browser, and it can be installed like an app:
 
 1. Open your live website in **Chrome** on the Android phone and log in.
 2. Tap the **three dots** at the top right.
 3. Tap **Install app** (or **Add to Home screen**), then tap **Install**.
-4. Open StudyTrack from the new icon on the home screen. It opens full screen like a normal app.
+4. Open Study Pulse from the new icon on the home screen. It opens full screen like a normal app.
 
 It needs an internet connection to load and save data.
 
 ## Real email addresses only
 
-StudyTrack checks the email twice:
+Study Pulse checks the email twice:
 
 1. **Before signup** (`/api/auth/check-email`): it blocks typos like `gmial.com`, common temporary-inbox sites, and domains that do not exist or cannot receive email.
 2. **After signup**: the student must click the confirmation link we email them. An address that does not exist can never be confirmed, so it can never log in. This is the part that truly proves the email is real.
@@ -107,7 +107,7 @@ To turn the confirmation on:
 
 Notes: no website can know an address is real without sending a message to it, which is why the confirmation email matters. The list of temporary-inbox sites is a short one, not complete.
 
-## Using StudyTrack offline
+## Using Study Pulse offline
 
 - The app saves the pages you open and your latest deadlines, subjects, schedule, exams, and reviewers on the device.
 - Without internet, you can still open pages you have visited before and read your saved data. An "You're offline" note appears.
