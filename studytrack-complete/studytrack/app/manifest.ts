@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',
-    name: 'StudyTrack',
-    short_name: 'StudyTrack',
+    name: 'Study Pulse',
+    short_name: 'Study Pulse',
     description: 'Track deadlines, plan your week, and review every subject before exams.',
     lang: 'en',
     categories: ['education', 'productivity'],

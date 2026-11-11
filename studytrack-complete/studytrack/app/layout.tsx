@@ -18,16 +18,16 @@ export const metadata: Metadata = {
         : 'http://localhost:3000'),
   ),
   title: {
-    default: 'StudyTrack — Never miss a deadline again',
-    template: '%s · StudyTrack',
+    default: 'Study Pulse — Never miss a deadline again',
+    template: '%s · Study Pulse',
   },
   description:
-    'StudyTrack is a free study planner for students. Track deadlines, organize your weekly class schedule, and get a smart review plan before every exam.',
+    'Study Pulse is a free study planner for students. Track deadlines, organize your weekly class schedule, and get a smart review plan before every exam.',
   keywords: ['study planner', 'student planner', 'homework tracker', 'exam review', 'class schedule'],
-  applicationName: 'StudyTrack',
-  appleWebApp: { capable: true, title: 'StudyTrack', statusBarStyle: 'default' },
+  applicationName: 'Study Pulse',
+  appleWebApp: { capable: true, title: 'Study Pulse', statusBarStyle: 'default' },
   openGraph: {
-    title: 'StudyTrack — Never miss a deadline again',
+    title: 'Study Pulse — Never miss a deadline again',
     description:
       'Track deadlines, plan your week, and review every subject before exams.',
     type: 'website',
