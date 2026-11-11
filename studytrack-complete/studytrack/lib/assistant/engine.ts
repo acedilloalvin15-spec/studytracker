@@ -13,7 +13,7 @@ const STOP = new Set([
   'the', 'a', 'an', 'and', 'or', 'to', 'of', 'in', 'on', 'for', 'is', 'are', 'was', 'be', 'i', 'my', 'me', 'it',
   'this', 'that', 'with', 'at', 'from', 'about', 'tell', 'you', 'your', 'please', 'can', 'could', 'would', 'give',
   'what', 'who', 'whom', 'which', 'how', 'why', 'when', 'where', 'do', 'does', 'did', 'explain', 'define', 'meaning',
-  'mean', 'simply', 'briefly', 'some', 'please', 'want', 'know', 'want',
+  'mean', 'simply', 'briefly', 'some', 'want', 'know',
 ])
 
 function words(text: string): string[] {
@@ -26,7 +26,7 @@ function words(text: string): string[] {
 
 // Questions about the assistant's own system, or about hacking, are never answered.
 const SYSTEM_OR_HACK =
-  /\b(your (system|prompt|instructions?|code|source|api|database|server|password|model|weights|training|hidden)|system prompt|jailbreak|ignore (all |your |previous )?(rules|instructions)|are you (chatgpt|claude|gemini|meta ai|an? (ai|llm|bot))|who (made|built|trained|created|owns) you|what model are you|hack(ing|ed|s)?|exploit|malware|ransomware|phishing|ddos|sql injection|crack (a |the )?password|bypass (the )?(login|security|auth|paywall))\b/i
+  /\b(your (system|prompt|instructions?|code|source|api|database|server|password|model|weights|training|hidden)|system prompt|jailbreak|ignore (all |your |previous )?(rules|instructions)|are you (a |an )?(ai|bot|chatbot|llm|claude|gpt|language model)|hack(ing|er|ers|ed|s)?\b|sql injection|ddos|malware|phishing|exploit (code|for)|crack (a |the |someone's )?password|bypass (the )?(login|password|security|authentication))/i
 
 const SAFE_REFUSAL =
   "I can't help with that. I can't share details about my own system, and I don't help with hacking. " +
@@ -34,7 +34,7 @@ const SAFE_REFUSAL =
 
 const GREETING = /^(hi|hello|hey|good (morning|afternoon|evening)|kumusta)\b/i
 const APP_QUESTION =
-  /\b(how (do|can|to)|where|can i|why (won'?t|isn'?t|doesn'?t|can'?t)|not (working|showing)|button|settings?|page|reminder|notification|upload|account|password reset|log ?in|sign ?in)\b/i
+  /\b(how (do|can|to)|where|can i|why (won'?t|isn'?t|doesn'?t|can'?t)|not (working|showing)|button|settings?|page|reminder|notification|upload|account|password reset|log ?in|sign ?in|calendar|schedule|task|subject|reviewer)\b/i
 const GENERAL_QUESTION = /\b(what|who|define|explain|meaning|tell me about|history of|why is|why are|when was|where is)\b/i
 
 const TIPS = [
@@ -63,6 +63,7 @@ function bestSentences(text: string, question: string, limit = 3): string[] {
     .map((x) => x.s)
 }
 
+/** Answers note questions only when a meaningful part of the question matches the reviewer. */
 function reviewerAnswer(message: string, { title, content }: ReviewerInput): string | null {
   const lower = message.toLowerCase()
 
@@ -83,21 +84,24 @@ function reviewerAnswer(message: string, { title, content }: ReviewerInput): str
   }
 
   const qWords = new Set(words(message))
-  const term = content.key_terms?.find((t) => {
-    const tw = words(t.term)
-    return tw.length > 0 && tw.every((w) => qWords.has(w))
+  if (!qWords.size) return null
+
+  const terms = content.key_terms ?? []
+  const exactTerm = terms.find((t) => {
+    const termWords = words(t.term)
+    return termWords.length > 0 && termWords.every((w) => qWords.has(w))
   })
-  if (term) return `${term.term}: ${term.definition}`
+  if (exactTerm) return `${exactTerm.term}: ${exactTerm.definition}`
 
-  const fromText = [
+  const matchedLines = [
     ...bestSentences(content.summary ?? '', message),
-    ...(content.key_terms ?? [])
+    ...terms
       .map((t) => `${t.term}: ${t.definition}`)
-      .filter((line) => words(line).some((w) => qWords.has(w))),
-  ].slice(0, 3)
-
-  if (fromText.length) return `From your reviewer "${title}":\n\n- ${fromText.join('\n- ')}`
-  return null
+      .filter((line) => words(line).filter((w) => qWords.has(w)).length >= Math.min(2, qWords.size)),
+  ]
+  const unique = [...new Set(matchedLines)]
+  if (!unique.length) return null
+  return `From your reviewer "${title}":\n\n- ${unique.slice(0, 3).join('\n- ')}`
 }
 
 /** Asks Wikipedia (free, no key) for a short summary of the best matching article. */
@@ -140,18 +144,11 @@ function appAnswer(articles: HelpArticle[]): string | null {
 export async function answerQuestion(message: string, reviewer: ReviewerInput | null): Promise<string> {
   const text = message.trim()
 
+  if (!text) return 'Please ask a study question or a StudyTrack question.'
   if (SYSTEM_OR_HACK.test(text)) return SAFE_REFUSAL
 
   if (GREETING.test(text)) {
-    return (
-      'Hi, I\'m Study Buddie! I can explain school topics, help you use StudyTrack, give study tips, or quiz you on a reviewer. ' +
-      'What would you like to do?'
-    )
-  }
-
-  if (reviewer) {
-    const fromReviewer = reviewerAnswer(text, reviewer)
-    if (fromReviewer) return fromReviewer
+    return 'Hi, I\'m Study Buddie! I can explain school topics, help you use StudyTrack, give study tips, or quiz you on a reviewer. What would you like to do?'
   }
 
   if (/\b(tip|tips|how to study|study better|study habits|advice)\b/i.test(text)) {
@@ -161,28 +158,28 @@ export async function answerQuestion(message: string, reviewer: ReviewerInput | 
   const articles = findHelpArticles(text, 1)
   const appFirst = APP_QUESTION.test(text)
 
+  // App questions are answered from the documented feature guide before any public source.
   if (appFirst) {
     const app = appAnswer(articles)
     if (app) return app
   }
+
+  if (reviewer) {
+    const fromReviewer = reviewerAnswer(text, reviewer)
+    if (fromReviewer) return fromReviewer
+  }
+
+  // Don't let a broad, accidental keyword match masquerade as an answer to an unrelated app question.
+  if (articles.length && appFirst) return appAnswer(articles) ?? 'I could not find a matching StudyTrack help article. Please try asking about a specific page or feature.'
 
   if (GENERAL_QUESTION.test(text) || !appFirst) {
     const general = await wikipediaAnswer(text)
     if (general) return general
   }
 
-  const app = appAnswer(articles)
-  if (app) return app
-
   if (reviewer) {
-    return (
-      `I couldn't find that in "${reviewer.title}" or on Wikipedia. ` +
-      'Try a word from your notes, or ask for a summary, a quiz, or flashcards.'
-    )
+    return `I couldn't find that in "${reviewer.title}". Try a key term from your notes, or ask for a summary, a quiz, or flashcards.`
   }
 
-  return (
-    "I couldn't find a good answer to that. Try asking with a few key words, such as the name of the topic. " +
-    'I can also help with StudyTrack features or give study tips.'
-  )
+  return 'I’m not confident enough to answer that from the information available. Try a clearer topic name or ask about a specific StudyTrack feature.'
 }
