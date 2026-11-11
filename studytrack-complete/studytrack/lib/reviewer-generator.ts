@@ -80,12 +80,12 @@ const sentenceEnd = (s: string) => (/[.!?…]$/.test(s) ? s : `${s}.`)
 
 const BAD_START = /^(this|that|these|those|it|its|there|here|he|she|they|we|you|i|which|who|what|when|where|how|why|if|as|so|but|and|or)\b/i
 const BAD_TERM_START =
-  /^(overall|main|first|second|third|another|other|others|some|many|most|several|various|same|such|following|above|previous|next|last|one|two|three|each|every|all|both|no|any|whole|entire|general|important|different|new)\b/i
+  /^(overall|main|first|second|third|another|other|others|some|many|most|several|various|same|such|following|above|previous|next|last|one|two|three|each|every|all|both|no|any|whole|entire|general|[...]
 const COPULA =
   /^(.{2,70}?)\s+(is defined as|are defined as|can be defined as|is known as|are known as|is called|are called|refers to|refer to|stands for|means|is|are)\s+(.{12,})$/
-const TAGALOG = /^(?:Ang\s+)?(\p{Lu}[\p{L}-]*(?:\s+(?!ay\b)[\p{L}-]+){0,3}?)\s+(?:ay\s+(?=ang\s|isang\s|ito\s|tumutukoy\s|dami\s|mga\s|proseso\s|paraan\s|uri\s|bahagi\s|kalagayan\s|sistema\s)|(?:tumutukoy sa|ibig sabihin ng)\s+)(.{10,})$/u
+const TAGALOG = /^(?:Ang\s+)?(\p{Lu}[\p{L}-]*(?:\s+(?!ay\b)[\p{L}-]+){0,3}?)\s+(?:ay\s+(?=ang\s|isang\s|ito\s|tumutukoy\s|dami\s|mga\s|proseso\s|paraan\s|uri\s|bahagi\s|kalagayan\s|sistema\s)|(?:t[...]
 const CALLED =
-  /^(.{8,90}?),?\s+(?:also\s+)?(?:called|known as|termed|referred to as|tinatawag na|tinawag na)\s+(?:the\s+)?(\p{L}[\p{L}' -]{2,40}?)(?=,|\.|;|\s+(?:have|has|is|are|was|were|which|that|who|can|will|in|to|ay)\b|$)/iu
+  /^(.{8,90}?),?\s+(?:also\s+)?(?:called|known as|termed|referred to as|tinatawag na|tinawag na)\s+(?:the\s+)?(\p{L}[\p{L}' -]{2,40}?)(?=,|\.|;|\s+(?:have|has|is|are|was|were|which|that|who|can|wi[...]
 const APPOSITIVE =
   /(\p{Lu}[\p{L}'’-]*(?:\s+(?:of|the|de|la)?\s*\p{Lu}[\p{L}'’-]*){0,3}),\s+((?:a|an|the|ang|isang)\s+[^,.;]{8,140}?)(?=,|\.|;|$)/u
 const INTRO_WORDS = new Set('in on at during after before by from with for to noong sa'.split(' '))
@@ -168,7 +168,7 @@ function termsFromSentence(sentence: string, order: number, headingTerms: Set<st
   const plain = s.replace(/\*\*/g, '')
 
   // Adenosine triphosphate (ATP) ...
-  for (const m of plain.matchAll(/\(([\p{Lu}][\p{Lu}\d]{1,7})\)/gu)) {
+  for (const m of plain.matchAll(/\(([\p{Lu}][\p{Lu}\d]{1,7})\)/gu)) {
     const full = expandAcronym(plain.slice(0, m.index), m[1])
     if (full) push(m[1], full, 3, 'abbr', true)
   }
@@ -378,7 +378,7 @@ function analyze(rawText: string): Analysis {
 function bulletLabel(b: string) {
   const colon = /^([^:]{2,60}?):\s+\S/.exec(b)
   const label = colon && words(colon[1]).length <= 6 ? colon[1] : b
-  return clip(label.replace(/[.;:,\s]+$/, ''), 70)
+  return clip(label.replace(/[.;:,%\s]+$/, ''), 70)
 }
 
 // ---------- fill-in-the-blank ----------
@@ -463,9 +463,9 @@ function fakeDates(answer: string): string[] {
     const y = Number(answer)
     return [-1, 1, -2, 2, -3, 3, -5, 5, -10, 10].map((d) => String(y + d)).filter((x) => Number(x) <= new Date().getFullYear() + 1)
   }
-  const m = new RegExp(`^(${MONTH_NAMES.join('|')})\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?$`).exec(answer)
+  const m = new RegExp(`^(${MONTH_NAMES.join('|')})\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?$`).exec(answer)
   if (!m) {
-    const my = new RegExp(`^(${MONTH_NAMES.join('|')})\\s+(\\d{4})$`).exec(answer)
+    const my = new RegExp(`^(${MONTH_NAMES.join('|')})\s+(\\d{4})$`).exec(answer)
     if (!my) return []
     const mi = MONTH_NAMES.indexOf(my[1])
     return [1, -1, 2, 3].map((d) => `${MONTH_NAMES[(mi + d + 12) % 12]} ${my[2]}`).concat([`${my[1]} ${Number(my[2]) + 1}`, `${my[1]} ${Number(my[2]) - 1}`])
@@ -571,52 +571,41 @@ function sectionTitle(h: string | null, title: string) {
 }
 
 function buildSummary(a: Analysis, title: string): string {
-  const { sentences, sections } = a
+  const { sentences, sections, terms } = a
   const prose = sentences.filter((s) => s.kind === 'prose' && s.score > 0)
-  const total = prose.length
-  const target = Math.min(14, Math.max(4, Math.round(total * 0.22)))
   const ranked = [...prose].sort((x, y) => y.score - x.score)
-  const best = ranked[0]?.score ?? 1
-  const picked: Sentence[] = []
-  const tokenSets = new Map<number, Set<string>>()
-  const sets = (s: Sentence) => tokenSets.get(s.order) ?? tokenSets.set(s.order, new Set(tokens(s.text))).get(s.order)!
-  const canAdd = (s: Sentence) => !picked.some((p) => p.order === s.order || jaccard(sets(s), sets(p)) > 0.55)
+  const main = ranked[0]
+  const support = ranked.slice(1, 4).map((s) => sentenceEnd(s.text))
+  const importantTerms = terms.filter((t) => !t.weak).slice(0, 3)
 
-  // 1) every section with text gets its best sentence (preferring its opening one),
-  const sectionBest: Sentence[] = []
-  sections.forEach((_, si) => {
-    const inSec = prose.filter((s) => s.section === si)
-    if (!inSec.length) return
-    const first = inSec.find((s) => s.first && s.score >= best * 0.35)
-    sectionBest.push(first ?? [...inSec].sort((x, y) => y.score - x.score)[0])
-  })
-  for (const s of sectionBest.sort((x, y) => y.score - x.score).slice(0, target)) if (canAdd(s)) picked.push(s)
-  // 2) then the strongest remaining sentences, without repeating an idea.
-  for (const s of ranked) {
-    if (picked.length >= target) break
-    if (canAdd(s)) picked.push(s)
+  const lines: string[] = []
+  lines.push(`${title}`)
+  lines.push('')
+  lines.push('Main idea:')
+  lines.push(main ? sentenceEnd(main.text) : 'No main idea was found in the notes.')
+  lines.push('')
+  lines.push('Key points:')
+  if (support.length) {
+    for (const point of support) lines.push(`• ${point}`)
+  } else {
+    lines.push('• The notes focus on the main topic and its supporting details.')
+  }
+  lines.push('')
+  lines.push('Must remember:')
+  if (importantTerms.length) {
+    for (const term of importantTerms) lines.push(`• ${term.term}: ${term.definition}`)
+  } else {
+    lines.push('• Review the main topic and its supporting facts.')
+  }
+  lines.push('')
+  lines.push('Quick check:')
+  if (importantTerms.length) {
+    lines.push(`• Focus on: ${importantTerms.map((t) => t.term).join(' • ')}`)
+  } else {
+    lines.push('• Check the strongest details from the notes before answering a question.')
   }
 
-  const bySection = new Map<number, Sentence[]>()
-  picked.sort((x, y) => x.order - y.order).forEach((s) => bySection.set(s.section, [...(bySection.get(s.section) ?? []), s]))
-  // Sections with a list always get one short line naming the items.
-  sections.forEach((sec, si) => {
-    if (sec.bullets.length >= 2 && sec.bullets.length <= 10 && !bySection.has(si)) bySection.set(si, [])
-  })
-  const parts: string[] = []
-  ;[...bySection.entries()]
-    .sort((x, y) => x[0] - y[0])
-    .forEach(([si, list]) => {
-      const sec = sections[si]
-      const head = sectionTitle(sec.heading, title)
-      let body = list.map((s) => sentenceEnd(s.text)).join(' ')
-      if (sec.bullets.length >= 2 && sec.bullets.length <= 10) {
-        const items = `${sec.bullets.map((b) => bulletLabel(stripMarks(b))).join('; ')}.`
-        body = body ? `${items} ${body}` : items
-      }
-      if (body) parts.push(head ? `${head}: ${body}` : body)
-    })
-  return parts.join('\n\n') || sentences.slice(0, 4).map((s) => sentenceEnd(s.text)).join(' ')
+  return lines.join('\n')
 }
 
 // ---------- flashcards ----------
@@ -648,7 +637,7 @@ function buildFlashcards(a: Analysis, title: string, count: number, o: { rand: (
   let n = 0
   for (const t of orderTerms) {
     if (n >= cap) break
-    const q = t.src === 'bullet' ? `Explain: ${t.term}` : t.src === 'abbr' ? `What does ${t.term} stand for?` : t.src === 'called' ? `What is the name for: ${t.definition.toLowerCase()}?` : t.strength >= 3 ? `Define: ${t.term}` : `What is ${t.term}?`
+    const q = t.src === 'bullet' ? `Explain: ${t.term}` : t.src === 'abbr' ? `What does ${t.term} stand for?` : t.src === 'called' ? `What is the name for: ${t.definition.toLowerCase()}?` : `What is ${t.term}?`
     const ans = t.src === 'called' ? t.term : t.definition
     const before = cards.length
     add(q, ans)
@@ -741,7 +730,7 @@ function buildQuiz(a: Analysis, count: number, o: { rand: () => number; style: S
       .sort((p, q) => p.score - q.score)
   }
 
-  const clozeQueue = o.style === 'harder' ? [...a.clozes].sort((x, y) => (y.kind === 'word' ? 0 : 1) - (x.kind === 'word' ? 0 : 1) || y.score - x.score) : o.varied ? shuffle(a.clozes.slice(0, 60), rand) : [...a.clozes]
+  const clozeQueue = o.style === 'harder' ? [...a.clozes].sort((x, y) => (y.kind === 'word' ? 0 : 1) - (x.kind === 'word' ? 0 : 1) || y.score - x.score) : o.varied ? shuffle(a.clozes.slice(0, 60), o.rand) : a.clozes.slice(0, 60)
   const queues = {
     cloze: clozeQueue,
     byDefinition: shuffle(definable, rand),
@@ -777,7 +766,7 @@ function buildQuiz(a: Analysis, count: number, o: { rand: () => number; style: S
       const right = clip(t.definition, 130)
       const lenOk = (d: string) => d.length > right.length * 0.4 && d.length < right.length * 2.5
       const wrong = shuffle(
-        definable.filter((x) => x.term !== t.term && !norm(x.definition).includes(norm(t.term))).map((x) => clip(x.definition, 130)).filter((d) => lenOk(d) && jaccard(new Set(tokens(d)), new Set(tokens(right))) < 0.5),
+        definable.filter((x) => x.term !== t.term && !norm(x.definition).includes(norm(t.term))).map((x) => clip(x.definition, 130)).filter((d) => lenOk(d) && jaccard(new Set(tokens(d)), new Set(tokens(right))) > 0.1),
         rand,
       ).slice(0, 3)
       add(t.src === 'bullet' ? `What does the text say about ${t.term}?` : `What is ${t.term}?`, right, wrong, `${t.term}: ${t.definition}`)
@@ -786,8 +775,6 @@ function buildQuiz(a: Analysis, count: number, o: { rand: () => number; style: S
       if (!item) continue
       const own = item.l.labels.map(norm)
       const wc = words(item.label).length
-      // A wrong answer must not be part of ANY item in the list (e.g. "Battle of Manila Bay" inside
-      // "Battle of Manila Bay on May 1, 1898"), or the question would have several right answers.
       const headingN = norm(item.l.heading)
       const inList = (x: string) => headingN.includes(norm(x)) || own.some((o) => o === norm(x) || o.includes(norm(x)) || norm(x).includes(o))
       const wrong = shuffle(
