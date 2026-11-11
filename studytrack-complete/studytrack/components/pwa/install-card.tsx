@@ -18,12 +18,12 @@ export function InstallCard() {
           <Smartphone className="size-5 text-primary" aria-hidden="true" /> Install on your phone
         </CardTitle>
         <CardDescription>
-          Add StudyTrack to your home screen. It opens full screen like an app and keeps working without internet.
+          Add Study Pulse to your home screen. It opens full screen like an app and keeps working without internet.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {installed ? (
-          <p className="text-sm font-medium text-later">StudyTrack is installed on this device.</p>
+          <p className="text-sm font-medium text-later">Study Pulse is installed on this device.</p>
         ) : canPrompt ? (
           <Button
             className="self-start"
