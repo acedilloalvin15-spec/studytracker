@@ -80,12 +80,12 @@ const sentenceEnd = (s: string) => (/[.!?…]$/.test(s) ? s : `${s}.`)
 
 const BAD_START = /^(this|that|these|those|it|its|there|here|he|she|they|we|you|i|which|who|what|when|where|how|why|if|as|so|but|and|or)\b/i
 const BAD_TERM_START =
-  /^(overall|main|first|second|third|another|other|others|some|many|most|several|various|same|such|following|above|previous|next|last|one|two|three|each|every|all|both|no|any|whole|entire|general|[...]
+  /^(overall|main|first|second|third|another|other|others|some|many|most|several|various|same|such|following|above|previous|next|last|one|two|three|each|every|all|both|no|any|whole|entire|general|certain|particular|specific)\b/i
 const COPULA =
   /^(.{2,70}?)\s+(is defined as|are defined as|can be defined as|is known as|are known as|is called|are called|refers to|refer to|stands for|means|is|are)\s+(.{12,})$/
-const TAGALOG = /^(?:Ang\s+)?(\p{Lu}[\p{L}-]*(?:\s+(?!ay\b)[\p{L}-]+){0,3}?)\s+(?:ay\s+(?=ang\s|isang\s|ito\s|tumutukoy\s|dami\s|mga\s|proseso\s|paraan\s|uri\s|bahagi\s|kalagayan\s|sistema\s)|(?:t[...]
+const TAGALOG = /^(?:Ang\s+)?(\p{Lu}[\p{L}-]*(?:\s+(?!ay\b)[\p{L}-]+){0,3}?)\s+(?:ay\s+(?=ang\s|isang\s|ito\s|tumutukoy\s|dami\s|mga\s|proseso\s|paraan\s|uri\s|bahagi\s|kalagayan\s|sistema\s)|tumutukoy\s+sa\s+)(.{12,})$/u
 const CALLED =
-  /^(.{8,90}?),?\s+(?:also\s+)?(?:called|known as|termed|referred to as|tinatawag na|tinawag na)\s+(?:the\s+)?(\p{L}[\p{L}' -]{2,40}?)(?=,|\.|;|\s+(?:have|has|is|are|was|were|which|that|who|can|wi[...]
+  /^(.{8,90}?),?\s+(?:also\s+)?(?:called|known as|termed|referred to as|tinatawag na|tinawag na)\s+(?:the\s+)?(\p{L}[\p{L}' -]{2,40}?)(?=,|\.|;|\s+(?:have|has|is|are|was|were|which|that|who|can|will|would|may|might|do|does|did)\b|$)/u
 const APPOSITIVE =
   /(\p{Lu}[\p{L}'’-]*(?:\s+(?:of|the|de|la)?\s*\p{Lu}[\p{L}'’-]*){0,3}),\s+((?:a|an|the|ang|isang)\s+[^,.;]{8,140}?)(?=,|\.|;|$)/u
 const INTRO_WORDS = new Set('in on at during after before by from with for to noong sa'.split(' '))
