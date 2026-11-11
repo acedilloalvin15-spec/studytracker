@@ -1,4 +1,4 @@
-/* StudyTrack service worker: keeps the app usable when there is no internet. */
+/* Study Pulse service worker: keeps the app usable when there is no internet. */
 const VERSION = 'v2'
 const STATIC_CACHE = `studytrack-static-${VERSION}`
 const PAGE_CACHE = `studytrack-pages-${VERSION}`
