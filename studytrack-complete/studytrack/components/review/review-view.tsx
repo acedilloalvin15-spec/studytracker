@@ -100,7 +100,7 @@ export function ReviewView() {
     <>
       <PageHeader
         title="Review planner"
-        description="Add your exams and StudyTrack spreads review sessions across every subject so none get forgotten."
+        description="Add your exams and Study Pulse spreads review sessions across every subject so none get forgotten."
         actions={
           !noSubjects && (
             <>
