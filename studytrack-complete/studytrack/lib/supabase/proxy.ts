@@ -9,6 +9,7 @@ const PROTECTED_PREFIXES = [
   '/review',
   '/reviewers',
   '/calendar',
+  '/assistant',
   '/settings',
 ]
 const AUTH_PAGES = ['/login', '/signup']
