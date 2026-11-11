@@ -16,7 +16,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             Never miss a deadline again
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-muted-foreground text-pretty">
-            StudyTrack keeps your assignments, class schedule, and exam reviews in one calm place,
+            Study Pulse keeps your assignments, class schedule, and exam reviews in one calm place,
             so you always know what to work on next.
           </p>
           <div className="flex flex-wrap gap-3">

@@ -36,7 +36,7 @@ export function HowItWorks() {
         <div className="mt-14 flex flex-col items-start justify-between gap-6 rounded-3xl bg-primary p-8 text-primary-foreground md:flex-row md:items-center md:p-10">
           <div>
             <p className="text-2xl font-bold text-balance">Ready for a calmer semester?</p>
-            <p className="mt-1 opacity-85">Set up StudyTrack in under five minutes.</p>
+            <p className="mt-1 opacity-85">Set up Study Pulse in under five minutes.</p>
           </div>
           <Link href="/signup" className={cn(buttonVariants({ variant: 'secondary', size: 'lg' }), 'h-11 px-5 text-base')}>
             Get Started Free

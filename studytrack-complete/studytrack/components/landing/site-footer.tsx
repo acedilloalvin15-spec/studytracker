@@ -9,7 +9,7 @@ export function SiteFooter() {
           <Logo />
           <p className="text-sm text-muted-foreground">
             {'© '}
-            {new Date().getFullYear()} StudyTrack. Built for students, by students at heart.
+            {new Date().getFullYear()} Study Pulse. Built for students, by students at heart.
           </p>
         </div>
         <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">

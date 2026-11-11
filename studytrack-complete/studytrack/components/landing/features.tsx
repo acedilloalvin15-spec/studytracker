@@ -14,7 +14,7 @@ const FEATURES = [
   {
     icon: Sparkles,
     title: 'Smart Review Planner',
-    body: 'Add your exam dates and StudyTrack spreads review sessions across the days left, so no subject gets forgotten.',
+    body: 'Add your exam dates and Study Pulse spreads review sessions across the days left, so no subject gets forgotten.',
   },
   {
     icon: Bell,
