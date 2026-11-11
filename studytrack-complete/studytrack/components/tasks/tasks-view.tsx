@@ -146,7 +146,7 @@ export function TasksView() {
           description={
             tasks?.length
               ? 'Try a different filter or search term.'
-              : 'Add your first assignment and StudyTrack will keep an eye on the deadline for you.'
+              : 'Add your first assignment and Study Pulse will keep an eye on the deadline for you.'
           }
           action={
             !tasks?.length && (
