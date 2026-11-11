@@ -1,5 +1,5 @@
 // Free, key-less assistant. Answers come from:
-// 1) safety rules, 2) the reviewer the student chose, 3) StudyTrack help articles,
+// 1) safety rules, 2) the reviewer the student chose, 3) Study Pulse help articles,
 // 4) Wikipedia's public search and summary service (free, no API key).
 import { findHelpArticles, type HelpArticle } from '@/lib/assistant/knowledge'
 import type { ReviewerContent } from '@/lib/types'
@@ -7,7 +7,7 @@ import type { ReviewerContent } from '@/lib/types'
 export type ReviewerInput = { title: string; content: ReviewerContent }
 
 const MAX_ARTICLE_CHARS = 700
-const UA = 'StudyTrack/1.0 (student study app)'
+const UA = 'StudyPulse/1.0 (student study app)'
 
 const STOP = new Set([
   'the', 'a', 'an', 'and', 'or', 'to', 'of', 'in', 'on', 'for', 'is', 'are', 'was', 'be', 'i', 'my', 'me', 'it',
@@ -30,7 +30,7 @@ const SYSTEM_OR_HACK =
 
 const SAFE_REFUSAL =
   "I can't help with that. I can't share details about my own system, and I don't help with hacking. " +
-  'I can help with your studies or with how to use StudyTrack.'
+  'I can help with your studies or with how to use Study Pulse.'
 
 const GREETING = /^(hi|hello|hey|good (morning|afternoon|evening)|kumusta)\b/i
 const APP_QUESTION =
@@ -144,11 +144,11 @@ function appAnswer(articles: HelpArticle[]): string | null {
 export async function answerQuestion(message: string, reviewer: ReviewerInput | null): Promise<string> {
   const text = message.trim()
 
-  if (!text) return 'Please ask a study question or a StudyTrack question.'
+  if (!text) return 'Please ask a study question or a Study Pulse question.'
   if (SYSTEM_OR_HACK.test(text)) return SAFE_REFUSAL
 
   if (GREETING.test(text)) {
-    return 'Hi, I\'m Study Buddie! I can explain school topics, help you use StudyTrack, give study tips, or quiz you on a reviewer. What would you like to do?'
+    return 'Hi, I\'m Study Buddie! I can explain school topics, help you use Study Pulse, give study tips, or quiz you on a reviewer. What would you like to do?'
   }
 
   if (/\b(tip|tips|how to study|study better|study habits|advice)\b/i.test(text)) {
@@ -170,7 +170,7 @@ export async function answerQuestion(message: string, reviewer: ReviewerInput | 
   }
 
   // Don't let a broad, accidental keyword match masquerade as an answer to an unrelated app question.
-  if (articles.length && appFirst) return appAnswer(articles) ?? 'I could not find a matching StudyTrack help article. Please try asking about a specific page or feature.'
+  if (articles.length && appFirst) return appAnswer(articles) ?? 'I could not find a matching Study Pulse help article. Please try asking about a specific page or feature.'
 
   if (GENERAL_QUESTION.test(text) || !appFirst) {
     const general = await wikipediaAnswer(text)
@@ -181,5 +181,5 @@ export async function answerQuestion(message: string, reviewer: ReviewerInput | 
     return `I couldn't find that in "${reviewer.title}". Try a key term from your notes, or ask for a summary, a quiz, or flashcards.`
   }
 
-  return 'I’m not confident enough to answer that from the information available. Try a clearer topic name or ask about a specific StudyTrack feature.'
+  return 'I’m not confident enough to answer that from the information available. Try a clearer topic name or ask about a specific Study Pulse feature.'
 }

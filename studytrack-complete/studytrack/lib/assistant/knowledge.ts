@@ -1,4 +1,4 @@
-// The assistant answers from these help articles first, so its answers about StudyTrack stay accurate.
+// The assistant answers from these help articles first, so its answers about Study Pulse stay accurate.
 // Edit or add articles here. Each article has keywords that help find it for a question.
 
 export type HelpArticle = {
@@ -11,9 +11,9 @@ export type HelpArticle = {
 export const HELP_ARTICLES: HelpArticle[] = [
   {
     id: 'getting-started',
-    title: 'Getting started with StudyTrack',
+    title: 'Getting started with Study Pulse',
     keywords: ['start', 'begin', 'new', 'setup', 'set up', 'first', 'signup', 'sign up', 'account', 'login', 'log in'],
-    body: `StudyTrack is a study planner for students. To begin, create an account with your email or sign in with Google.
+    body: `Study Pulse is a study planner for students. To begin, create an account with your email or sign in with Google.
 A good first step is to add your subjects, then add your class schedule, then add tasks and exams. The dashboard shows what is due soon.`,
   },
   {
@@ -41,7 +41,7 @@ Tasks due soon show on the Dashboard, and reminders appear in the notification b
     id: 'exams-and-review-plan',
     title: 'Exams and the review plan',
     keywords: ['exam', 'exams', 'test', 'quiz', 'review plan', 'study plan', 'review', 'revise', 'revision', 'plan', 'prepare'],
-    body: `The Review page lets you add an exam with its date and subject. StudyTrack then makes a day-by-day review plan,
+    body: `The Review page lets you add an exam with its date and subject. Study Pulse then makes a day-by-day review plan,
 spreading study sessions over the days before the exam. Mark a session as done when you finish it.`,
   },
   {
@@ -49,7 +49,7 @@ spreading study sessions over the days before the exam. Mark a session as done w
     title: 'Reviewer maker',
     keywords: ['reviewer', 'reviewers', 'notes', 'upload', 'pdf', 'word', 'docx', 'txt', 'summary', 'key terms', 'paste', 'make a reviewer', 'create reviewer'],
     body: `The Reviewer page turns your notes into a study reviewer. Upload a PDF, Word (.docx) or text (.txt) file, or paste your text.
-Choose how many quiz questions you want (5, 10 or 15). StudyTrack then builds a summary, key terms, flashcards and a practice quiz.
+Choose how many quiz questions you want (5, 10 or 15). Study Pulse then builds a summary, key terms, flashcards and a practice quiz.
 The reviewer is made with simple rules, not AI, so every answer comes from your own text.
 Files must be under 4 MB. Scanned pages and pictures cannot be read. Save your PDF as a text-based file if it does not work.
 You can make new quiz questions or flashcards from the same reviewer with the New quiz and New flashcards buttons.`,
@@ -77,9 +77,9 @@ You can change your password there too. You can add a profile picture, and you c
   },
   {
     id: 'offline-and-install',
-    title: 'Using StudyTrack offline and on your phone',
+    title: 'Using Study Pulse offline and on your phone',
     keywords: ['offline', 'no internet', 'install', 'app', 'android', 'phone', 'apk', 'iphone', 'home screen', 'pwa', 'sync'],
-    body: `StudyTrack works as a web app. You can install it on your phone's home screen from the browser menu, or download the Android app from the site.
+    body: `Study Pulse works as a web app. You can install it on your phone's home screen from the browser menu, or download the Android app from the site.
 Some things work offline: you can view your data, and changes you make offline are saved and synced when you are back online.
 Making a reviewer from a PDF or Word file needs internet. Pasted text and .txt files work offline.`,
   },
