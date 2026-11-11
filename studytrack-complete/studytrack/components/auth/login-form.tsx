@@ -75,18 +75,7 @@ export function LoginForm() {
             {...register('email')}
           />
         </FormField>
-        <FormField
-          id="password"
-          label={
-            <span className="flex w-full items-center justify-between">
-              Password
-              <Link href="/forgot-password" className="text-xs font-normal text-primary hover:underline">
-                Forgot password?
-              </Link>
-            </span>
-          }
-          error={errors.password?.message}
-        >
+        <FormField id="password" label="Password" error={errors.password?.message}>
           <div className="relative">
             <Input
               id="password"
@@ -108,6 +97,9 @@ export function LoginForm() {
               {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
             </button>
           </div>
+          <Link href="/forgot-password" className="self-end text-xs font-medium text-primary hover:underline">
+            Forgot password?
+          </Link>
         </FormField>
         <Button type="submit" variant="dark" className="mt-1 h-11 w-full rounded-full text-sm font-semibold shadow-sm" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="animate-spin" aria-hidden="true" />}
