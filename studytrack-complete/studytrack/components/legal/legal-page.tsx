@@ -6,7 +6,7 @@ export function LegalPage({ title, updated, children }: { title: string; updated
     <div className="min-h-dvh">
       <header className="border-b">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
-          <Link href="/" aria-label="StudyTrack home">
+          <Link href="/" aria-label="Study Pulse home">
             <Logo />
           </Link>
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
