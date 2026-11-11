@@ -226,7 +226,7 @@ export function DashboardView() {
               {loadingSessions ? (
                 <ListSkeleton rows={2} />
               ) : todaysReview.length === 0 ? (
-                <EmptyState icon={GraduationCap} title="No review sessions today" description="Add an upcoming exam and StudyTrack will plan your review days." className="border-none py-6" />
+                <EmptyState icon={GraduationCap} title="No review sessions today" description="Add an upcoming exam and Study Pulse will plan your review days." className="border-none py-6" />
               ) : (
                 <ul className="flex flex-col gap-2">
                   {todaysReview.map((r) => {
