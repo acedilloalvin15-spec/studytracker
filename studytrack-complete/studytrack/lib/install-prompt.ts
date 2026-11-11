@@ -41,7 +41,7 @@ function subscribe(onChange: () => void) {
   }
 }
 
-/** True while the browser is offering to install StudyTrack. */
+/** True while the browser is offering to install Study Pulse. */
 export function useCanInstall() {
   return useSyncExternalStore(subscribe, () => deferred !== null, () => false)
 }
