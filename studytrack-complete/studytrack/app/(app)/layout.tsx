@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, school, year_level, avatar_url, reminder_settings')
+    .select('id, full_name, school, year_level, avatar_url, is_admin, reminder_settings')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -26,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     school: null,
     year_level: null,
     avatar_url: null,
+    is_admin: false,
     reminder_settings: DEFAULT_REMINDERS,
   }
 
