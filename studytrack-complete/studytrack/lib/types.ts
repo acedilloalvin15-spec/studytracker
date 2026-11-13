@@ -13,7 +13,6 @@ export type Profile = {
   school: string | null
   year_level: string | null
   avatar_url: string | null
-  is_admin: boolean
   reminder_settings: ReminderSettings
 }
 
