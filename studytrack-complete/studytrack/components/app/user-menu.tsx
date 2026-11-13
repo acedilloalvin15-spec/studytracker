@@ -1,8 +1,6 @@
-'use client'
-
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookMarked, Download, FileText, LogOut, Settings, UserRound } from 'lucide-react'
+import { BookMarked, Download, FileText, LogOut, Settings, ShieldCheck, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -24,7 +22,6 @@ export function UserMenu() {
   const { profile, email } = useCurrentUser()
   const [showDownload, setShowDownload] = useState(false)
 
-  // Offer the Android app file on Android phones, but not inside the installed app itself.
   useEffect(() => {
     const standalone = window.matchMedia('(display-mode: standalone)').matches
     setShowDownload(/android/i.test(navigator.userAgent) && !standalone)
@@ -57,6 +54,7 @@ export function UserMenu() {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+
         <DropdownMenuItem onClick={() => router.push('/settings')}>
           <UserRound aria-hidden="true" /> Profile
         </DropdownMenuItem>
@@ -66,6 +64,11 @@ export function UserMenu() {
         <DropdownMenuItem onClick={() => router.push('/subjects')}>
           <BookMarked aria-hidden="true" /> Subjects
         </DropdownMenuItem>
+        {profile.is_admin && (
+          <DropdownMenuItem onClick={() => router.push('/admin/users')}>
+            <ShieldCheck aria-hidden="true" /> Admin users
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={() => router.push('/settings')}>
           <Settings aria-hidden="true" /> Settings
         </DropdownMenuItem>
